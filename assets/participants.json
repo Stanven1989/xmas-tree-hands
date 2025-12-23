@@ -1,77 +1,54 @@
 [
-  {
-    "name": "Stanven Yang",
-    "avatar": "assets/avatars/Stanven_Yang.webp",
-    "message": "Wishing you a joyful holiday season and a fantastic New Year!"
-  },
-  {
-    "name": "Allison",
-    "avatar": "assets/avatars/Allison.webp",
-    "message": "Merry Christmas and Happy New Year! May joy and luck stay with you always.."
-  },
-  {
-    "name": "Rocky ou",
-    "avatar": "assets/avatars/Rocky_ou.webp",
-    "message": "As Christmas and the New Year arrive hand in hand， may our AF's performance rise steadily， our team unite with one heart， and write a new chapter of success!"
-  },
-  {
-    "name": "Elijah Su",
-    "avatar": "assets/avatars/Elijah_Su.webp",
-    "message": "Merry Christmas!"
-  },
-  {
-    "name": "Soap Cai",
-    "avatar": "assets/avatars/Soap_Cai.webp",
-    "message": "happy new year"
-  },
-  {
-    "name": "Alice Ye",
-    "avatar": "assets/avatars/Alice_Ye.webp",
-    "message": "Merry Christmas and happy new year! 🎆🎊🎈 Looking forward to a fabulous 2026 ☀️⛰️💕💪🎾🧗‍♀️⛷️🌌⛵️"
-  },
-  {
-    "name": "Ajax Tang",
-    "avatar": "assets/avatars/Ajax_Tang.webp",
-    "message": "Merry Christmas to the iHub family and wish you all the best"
-  },
-  {
-    "name": "Yannis Lao",
-    "avatar": "assets/avatars/Yannis_Lao.webp",
-    "message": "Happy New Year and happy everyday✨🎈🎁🎊"
-  },
-  {
-    "name": "Jesse Lin",
-    "avatar": "assets/avatars/Jesse_Lin.webp",
-    "message": "Dear India Colleagues，Warmest wishes for a Merry Christmas and a bright New Year!Thank you for your outstanding efforts and seamless collaboration this year. We hope you enjoy a well-deserved break with your loved ones.Looking forward to achieving more together in the coming year."
-  },
-  {
-    "name": "Sandra Chen",
-    "avatar": "assets/avatars/Sandra_Chen.webp",
-    "message": "Wish you all the best in the new year"
-  },
-  {
-    "name": "Boris Lam",
-    "avatar": "assets/avatars/Boris_Lam.webp",
-    "message": "Best wishes for Analytics Factory teammates and your family. Merry Christmas 🎄 and Happy New Year 🎊"
-  },
-  {
-    "name": "Hans Tang",
-    "avatar": "assets/avatars/Hans_Tang.webp",
-    "message": "Christmas cheer， year’s end draws near. Toil won’t fail， no effort’s vain. Strength and health， peace doth prevail."
-  },
-  {
-    "name": "Kohl Zheng",
-    "avatar": "assets/avatars/Kohl_Zheng.webp",
-    "message": "Merry Christmas and Happy New Year!"
-  },
-  {
-    "name": "Yang Z Ma",
-    "avatar": "assets/avatars/Yang_Z_Ma.webp",
-    "message": "May the Force of Debug be with you. Merry Christmas 🎄"
-  },
-  {
-    "name": "Alice Wang",
-    "avatar": "assets/avatars/alice_wang.webp",
-    "message": "Wishing you a joyful holiday season and a fantastic New Year!"
-  }
+{"name":"Sherry Fu","avatar":"assets/avatars/Sherry_Fu.webp","message":"Merry Christmas and Happy New Year! May the coming year bring you good health， success at work， and a joyful family!"},
+{"name":"Miller Zhang","avatar":"assets/avatars/Miller_Zhang.webp","message":"Wish you a merry Christmas and happy new year!"},
+{"name":"Liping Huang","avatar":"assets/avatars/Liping_Huang.webp","message":"Happy New Year"},
+{"name":"Gigi Wang","avatar":"assets/avatars/Gigi_Wang.webp","message":"Dear team， Cheers to the holiday season and a new year. May 2026 bring you even more luck and opportunities!❤️"},
+{"name":"MayM Su","avatar":"assets/avatars/MayM_Su.webp","message":"Cheers to 2026， Team!A huge thank you for the amazing teamwork this past year. Let's step into the new year with even more energy， creativity， and success. Wishing you all a year full of growth， joy， and brilliant moments together.Here's to our next chapter!Happy New Year!"},
+{"name":"Tim Wen","avatar":"assets/avatars/Tim_Wen.webp","message":"Wishing you a Merry Christmas and a Happy New Year filled with peace， joy， and prosperity."},
+{"name":"Myra Zhao","avatar":"assets/avatars/Myra_Zhao.webp","message":"Whether you celebrate Christmas or simply enjoy the festive spirit， I hope this season brings joy and relaxation to you and your loved ones.Wishing everyone in India and China a wonderful holiday and a prosperous new year!"}
+{"name":"Shaoning Zhen","avatar":"assets/avatars/Shaoning_Zhen.webp","message":"Merry Christmas and a prosperous New Year! May this festive season bring you and your family endless joy， peace， and success."},
+{"name":"Yoyo Yao","avatar":"assets/avatars/Yoyo_Yao.webp","message":"Merry Christmas and happy new year. Wish you a happy and fruitful new year. Enjoy the time with your loved in Holiday season."},
+{"name":"Cyril zhang","avatar":"assets/avatars/Cyril_zhang.webp","message":"Merry Christmas! Hope you have a super fun and relaxing holiday with your favorite people"},
+{"name":"Arlene Zhang","avatar":"assets/avatars/Arlene_Zhang.webp","message":"May the magic and cheer of Christmas fill your home with joy， and may the coming year be filled with wonderful opportunities and rewarding achievements. Happy holidays!"},
+{"name":"Teresa Liu","avatar":"assets/avatars/Teresa_Liu.webp","message":"岁岁平安，年年有余Peace year after year and surplus year by year."}
+{"name":"Eric Liao","avatar":"assets/avatars/Eric_Liao.webp","message":"Merry Christmas"},
+{"name":"Sky Ye","avatar":"assets/avatars/Sky_Ye.webp","message":"Wish you have a peaceful and happy holiday~"},
+{"name":"Alex Song","avatar":"assets/avatars/Alex_Song.webp","message":"The Christmas bells are about to ring， and the dawn of the New Year is approaching. Wishing all colleagues from the India team and the China team a joyful and peaceful holiday season! Thank you all for working side by side all the time. May we communicate seamlessly and cooperate more harmoniously in the new year， and gain both growth and fruitful achievements together!"},
+{"name":"Ada LIANG","avatar":"assets/avatars/Ada_LIANG.webp","message":"Merry Christmas and happy new year to you and your loved ones. Wish everyone has a prosperous year in 2026!"},
+{"name":"John","avatar":"assets/avatars/John.webp","message":"have a great holiday"},
+{"name":"Lean Li","avatar":"assets/avatars/Lean_Li.webp","message":"Merry Christmas and Happy New Year to our awesome India and China teams! Big thanks for all our awesome teamwork this year. Hope everyone has a super fun holiday."},
+{"name":"Clair Yao","avatar":"assets/avatars/Clair_Yao.webp","message":"May this Christmas season bring you abundant warmth and all the best in everything."},
+{"name":"Yoon Luo","avatar":"assets/avatars/Yoon_Luo.webp","message":"Wishing you a warm and joyful Christmas， filled with love， laughter and all your favorite things."},
+{"name":"Monica Liu","avatar":"assets/avatars/Monica_Liu.webp","message":"Happy Christmas and New Year，wish your holidays be bug-free and pipeline run smoothly， and 2026 full of happiness and growth."},
+{"name":"Jaclin Pei","avatar":"assets/avatars/Jaclin_Pei.webp","message":"wishing my colleagues a Merry Christmas and a happy new year"},
+{"name":"Shirley Zheng","avatar":"assets/avatars/Shirley_Zheng.webp","message":"Happy New Year! Wishing you a joyful， healthy， and successful year ahead!"},
+{"name":"Harris Liu","avatar":"assets/avatars/Harris_Liu.webp","message":"happy holiday and wish all best"},
+{"name":"Zion Zeng","avatar":"assets/avatars/Zion_Zeng.webp","message":"It's fun to work with you all~ Merry Chirstmas and Happy New Year!!~~"},
+{"name":"George Yang","avatar":"assets/avatars/George_Yang.webp","message":"Merry christmas and happy new year！"},
+{"name":"Maple Li","avatar":"assets/avatars/Maple_Li.webp","message":"Warmest wishes for a joyful holiday season and a prosperous New Year!"},
+{"name":"James Jiang","avatar":"assets/avatars/James_Jiang.webp","message":"happy holiday! here's to a wonderful Christmas and a  successful new year!"},
+{"name":"Josh Jiang","avatar":"assets/avatars/Josh_Jiang.webp","message":"Merry Christmas and happy new year!"},
+{"name":"Amber Zhang","avatar":"assets/avatars/Amber_Zhang.webp","message":"Wishing you a joyful holiday season filled with warmth， laughter and all the good things!"},
+{"name":"Alex Lai","avatar":"assets/avatars/Alex_Lai.webp","message":"Dear DF SVS colleaguesMerry Christmas 🎄"},
+{"name":"Phyllis Lin","avatar":"assets/avatars/Phyllis_Lin.webp","message":"Merry Christmas to you and your family! Hope the holiday season wraps you in comfort and cheer."},
+{"name":"Raymond Yuan","avatar":"assets/avatars/Raymond_Yuan.webp","message":"Cheers to a new year filled with smooth deployments， zero merge conflicts， and lots of well-deserved coffee breaks—happy 2026."},
+{"name":"Jeremy Lin","avatar":"assets/avatars/Jeremy_Lin.webp","message":"Happy New Year! May all your wishes come true."},
+{"name":"Miya Luo","avatar":"assets/avatars/Miya_Luo.webp","message":"Happy holidays! May you be happy every day and get better and better"},
+{"name":"Ada Guo","avatar":"assets/avatars/Ada_Guo.webp","message":"Wishing all colleagues in the Analytics Factory Svs a Happy New Year and all the best!"},
+{"name":"Cecilia Chen","avatar":"assets/avatars/Cecilia_Chen.webp","message":"At Christmas and always，may peace and love fill your heart， beauty fill your world， and contentment and joy fill your days."},
+{"name":"Nicole Wu","avatar":"assets/avatars/Nicole_Wu.webp","message":"Cheers to a merry Christmas and a new year filled with new adventures!"},
+{"name":"Stanven Yang","avatar":"assets/avatars/Stanven_Yang.webp","message":"Merry Christmas! And happy new year! Wish you all the best!"},
+{"name":"Allison","avatar":"assets/avatars/Allison.webp","message":"Merry Christmas and Happy New Year! May joy and luck stay with you always."},
+{"name":"Rocky ou","avatar":"assets/avatars/Rocky_ou.webp","message":"As Christmas and the New Year arrive hand in hand， may our AF's performance rise steadily， our team unite with one heart， and write a new chapter of success!"},
+{"name":"Elijah Su","avatar":"assets/avatars/Elijah_Su.webp","message":"Merry Christmas!"},
+{"name":"Soap Cai","avatar":"assets/avatars/Soap_Cai.webp","message":"happy new year"},
+{"name":"Alice Ye","avatar":"assets/avatars/Alice_Ye.webp","message":"Merry Christmas and happy new year! 🎆🎊🎈 Looking forward to a fabulous 2026 ☀️⛰️💕💪🎾🧗‍♀️⛷️🌌⛵️"},
+{"name":"Ajax Tang","avatar":"assets/avatars/Ajax_Tang.webp","message":"Merry Christmas to the iHub family and wish you all the best"},
+{"name":"Yannis Lao","avatar":"assets/avatars/Yannis_Lao.webp","message":"Happy New Year and happy everyday✨🎈🎁🎊"},
+{"name":"Jesse Lin","avatar":"assets/avatars/Jesse_Lin.webp","message":"Dear India Colleagues，Warmest wishes for a Merry Christmas and a bright New Year!Thank you for your outstanding efforts and seamless collaboration this year. We hope you enjoy a well-deserved break with your loved ones.Looking forward to achieving more together in the coming year."},
+{"name":"Sandra Chen","avatar":"assets/avatars/Sandra_Chen.webp","message":"Wish you all the best in the new year"},
+{"name":"Boris Lam","avatar":"assets/avatars/Boris_Lam.webp","message":"Best wishes for Analytics Factory teammates and your family. Merry Christmas 🎄 and Happy New Year 🎊"},
+{"name":"Hans Tang","avatar":"assets/avatars/Hans_Tang.webp","message":"Christmas cheer， year’s end draws near.Toil won’t fail， no effort’s vain.Strength and health， peace doth prevail."},
+{"name":"Kohl Zheng","avatar":"assets/avatars/Kohl_Zheng.webp","message":"Merry Christmas and Happy New Year!"},
+{"name":"Yang Z Ma","avatar":"assets/avatars/Yang_Z_Ma.webp","message":"May the Force of Debug be with you. Merry Christmas 🎄"}
 ]
