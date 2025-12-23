@@ -1175,52 +1175,73 @@
     for (const p of fallbackParticipants) addPhotoTexture(makePlaceholderPhotoTexture(p.avatarLabel), p);
 
     async function loadParticipantsFromRepo() {
-      // Key fix: use ./ to be safe on GitHub Repo Pages base path
-      const url = new URL("./assets/participants.json", location.href).toString() + `?v=${Date.now()}`;
+      // 建议：只在你更新 participants.json 后手动改这个版本号（不要用 Date.now()）
+      const PARTICIPANTS_VERSION = "v1";
+      const url = new URL("./assets/participants.json", location.href).toString() + `?${PARTICIPANTS_VERSION}`;
     
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { cache: "no-store" }); // JSON 允许不缓存，保证更新立即生效
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} — ${res.url}`);
     
-        const text = await res.text();
-    
-        // Remove UTF-8 BOM if present
-        const clean = text.replace(/^\uFEFF/, "");
-    
-        const data = JSON.parse(clean);
+        const text = (await res.text()).replace(/^\uFEFF/, ""); // 去 BOM
+        const data = JSON.parse(text);
         const list = Array.isArray(data) ? data : (Array.isArray(data.participants) ? data.participants : []);
         if (!list.length) throw new Error("participants.json is empty");
     
         statusText.textContent = "Loading participant photos…";
-    
         clearPhotos();
     
         const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("anonymous");
+    
         const max = Math.min(120, list.length);
     
-        for (let i = 0; i < max; i++) {
-          const it = list[i] || {};
-          const name = String(it.name || "Anonymous");
-          const message = String(it.message || "Happy Holidays!");
-          const avatar = String(it.avatar || "");
+        // 关键：限并发并行（手机建议 4～6）
+        const CONCURRENCY = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 4 : 6;
     
-          await new Promise((resolve) => {
-            if (!avatar) {
-              addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
-              resolve();
-              return;
-            }
-            loader.load(
-              avatar,
-              (tex) => { addPhotoTexture(tex, { name, message }); resolve(); },
-              undefined,
-              () => {
+        let done = 0;
+        const updateProgress = () => {
+          statusText.textContent = `Loading photos… ${done}/${max}`;
+        };
+        updateProgress();
+    
+        // 将 list 切片，避免一次性 Promise.all 爆内存
+        let cursor = 0;
+        const workers = new Array(CONCURRENCY).fill(0).map(async () => {
+          while (cursor < max) {
+            const i = cursor++;
+            const it = list[i] || {};
+            const name = String(it.name || "Anonymous");
+            const message = String(it.message || "Happy Holidays!");
+            const avatar = String(it.avatar || "");
+    
+            // 头像不要 cache-bust，让浏览器缓存它（非常重要）
+            await new Promise((resolve) => {
+              if (!avatar) {
                 addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
+                done++; updateProgress();
                 resolve();
+                return;
               }
-            );
-          });
-        }
+              loader.load(
+                avatar,
+                (tex) => {
+                  addPhotoTexture(tex, { name, message });
+                  done++; updateProgress();
+                  resolve();
+                },
+                undefined,
+                () => {
+                  addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
+                  done++; updateProgress();
+                  resolve();
+                }
+              );
+            });
+          }
+        });
+    
+        await Promise.all(workers);
     
         pickRandomPhotoAndGreeting();
         statusText.textContent = "Default: Cone mode (enable hand tracking)";
@@ -1230,6 +1251,7 @@
         statusText.textContent = `Failed to load assets/participants.json: ${err.message}`;
       }
     }
+
 
 
     // ---------------------------
