@@ -1379,19 +1379,27 @@
     function clearPhotos() {
       for (const m of photoItems.splice(0, photoItems.length)) {
         photosGroup.remove(m);
+    
         if (m.geometry) m.geometry.dispose();
-        if (m.material?.map) m.material.map.dispose();
-        m.material?.dispose?.();
-
-        // dispose child materials/geometries (frame + glow)
-        for (const ch of (m.children || [])) {
+    
+        if (m.material) {
+          if (m.material.map) m.material.map.dispose();
+          if (typeof m.material.dispose === "function") m.material.dispose();
+        }
+    
+        // dispose children (frame + glow)
+        const children = m.children || [];
+        for (const ch of children) {
           if (ch.geometry) ch.geometry.dispose();
-          if (ch.material?.map) ch.material.map.dispose();
-          ch.material?.dispose?.();
+          if (ch.material) {
+            if (ch.material.map) ch.material.map.dispose();
+            if (typeof ch.material.dispose === "function") ch.material.dispose();
+          }
         }
       }
       focusedIndex = -1;
     }
+
 
     // ---------------------------
     // State machine
@@ -1429,14 +1437,17 @@
     function pickRandomPhotoAndMessage() {
       if (!photoItems.length) return;
       focusedIndex = Math.floor(Math.random() * photoItems.length);
-
+    
       const m = photoItems[focusedIndex];
-      const name = (m?.userData?.name || "").trim() || "Anonymous";
-      const msg  = (m?.userData?.message || "").trim() || "Happy Holidays!";
-
+      const ud = (m && m.userData) ? m.userData : {};
+    
+      const name = String(ud.name || "").trim() || "Anonymous";
+      const msg  = String(ud.message || "").trim() || "Happy Holidays!";
+    
       focusTitleEl.textContent = `From: ${name}`;
       focusTextEl.textContent = msg;
     }
+
 
     // ---------------------------
     // Camera control (palm-driven + touch fallback)
@@ -1973,7 +1984,7 @@
       renderer.setSize(w, h, false);
       bloomComposer.setSize(w, h);
       finalComposer.setSize(w, h);
-      bloomPass.setSize?.(w, h);
+      if (typeof bloomPass.setSize === "function") bloomPass.setSize(w, h);
     }
     window.addEventListener("resize", onResize);
 
