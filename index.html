@@ -337,7 +337,7 @@
     </div>
 
     <video id="cam" playsinline></video>
-    <audio id="bgm" src="assets/music/newyear.mp3" preload="auto" loop playsinline></audio>
+    <audio id="bgm" preload="none" loop playsinline></audio>
   </div>
 
   <script type="module-shim">
@@ -377,15 +377,22 @@
     
     let musicEnabled = false;
     
+    const BGM_URL = "assets/music/newyear.mp3";
+    let musicEnabled = false;
+    let musicPrepared = false;
+    
     async function enableMusic() {
       try {
-        bgm.volume = 0.28;          // 音量：0~1，建议 0.2~0.35
-        bgm.currentTime = bgm.currentTime || 0;
-        await bgm.play();           // 必须由用户手势触发
+        if (!musicPrepared) {
+          bgm.src = BGM_URL;          // 直到用户触发才开始加载
+          bgm.load();
+          musicPrepared = true;
+        }
+        bgm.volume = 0.28;
+        await bgm.play();
         musicEnabled = true;
         btnMusic.textContent = "Music: On";
       } catch (e) {
-        // 常见：浏览器阻止自动播放
         statusText.textContent = "Tap “Music” to start audio (autoplay blocked by browser).";
         musicEnabled = false;
         btnMusic.textContent = "Music: Off";
