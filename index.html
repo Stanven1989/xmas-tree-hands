@@ -305,6 +305,7 @@
             <button id="btnStart">Enable Hand Tracking</button>
             <button id="btnReset" class="secondary">Reset</button>
             <button id="btnHelp" class="secondary">Tips</button>
+            <button id="btnMusic" class="secondary">Music: Off</button>
           </div>
 
           <div class="status">
@@ -336,6 +337,7 @@
     </div>
 
     <video id="cam" playsinline></video>
+    <audio id="bgm" src="assets/music/newyear.mp3" preload="auto" loop playsinline></audio>
   </div>
 
   <script type="module-shim">
@@ -370,6 +372,37 @@
     const btnReset = document.getElementById("btnReset");
     const btnHelp = document.getElementById("btnHelp");
     const tips = document.getElementById("tips");
+    const btnMusic = document.getElementById("btnMusic");
+    const bgm = document.getElementById("bgm");
+    
+    let musicEnabled = false;
+    
+    async function enableMusic() {
+      try {
+        bgm.volume = 0.28;          // 音量：0~1，建议 0.2~0.35
+        bgm.currentTime = bgm.currentTime || 0;
+        await bgm.play();           // 必须由用户手势触发
+        musicEnabled = true;
+        btnMusic.textContent = "Music: On";
+      } catch (e) {
+        // 常见：浏览器阻止自动播放
+        statusText.textContent = "Tap “Music” to start audio (autoplay blocked by browser).";
+        musicEnabled = false;
+        btnMusic.textContent = "Music: Off";
+      }
+    }
+    
+    function disableMusic() {
+      bgm.pause();
+      // bgm.currentTime = 0;       // 若你想关闭后从头播放，取消注释
+      musicEnabled = false;
+      btnMusic.textContent = "Music: Off";
+    }
+    
+    btnMusic.addEventListener("click", () => {
+      if (musicEnabled) disableMusic();
+      else enableMusic();
+    });
 
     const focusOverlay = document.getElementById("focusOverlay");
     const focusTitleEl = document.getElementById("focusTitle");
