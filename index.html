@@ -768,6 +768,141 @@
 
     const particles = new THREE.Points(pGeo, pMat);
     tree.add(particles);
+    // ---------------------------
+    // Background Starfield (tiny cinematic sparkles)
+    // ---------------------------
+    const STAR_COUNT = 12000; // 手机上仍可接受；如卡顿改 8000
+    const starGeo = new THREE.BufferGeometry();
+    
+    const starNear = new Float32Array(STAR_COUNT * 3);   // 合拢态：更靠近树周围的星尘
+    const starFar  = new Float32Array(STAR_COUNT * 3);   // 散开态：铺满天空球
+    const starRand = new Float32Array(STAR_COUNT);
+    const starSize = new Float32Array(STAR_COUNT);
+    
+    function sampleSkySphere(R) {
+      // 均匀方向 + 轻微偏向上方
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * Math.PI * 2;
+      const phi = Math.acos(2 * v - 1);
+      const rr = (0.55 + Math.pow(Math.random(), 0.55) * 0.45) * R;
+      const x = rr * Math.sin(phi) * Math.cos(theta);
+      const y = rr * Math.cos(phi) * 0.85 + 1.5;
+      const z = rr * Math.sin(phi) * Math.sin(theta);
+      return new THREE.Vector3(x, y, z);
+    }
+    
+    for (let i = 0; i < STAR_COUNT; i++) {
+      // Near: 围绕树的更细小星尘（高度更高、半径更小）
+      const y = 0.8 + Math.pow(Math.random(), 0.55) * 6.2;
+      const r = (0.6 + Math.random() * 0.7) * (2.6 + (1 - y / 7.0) * 2.4);
+      const a = Math.random() * Math.PI * 2;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+    
+      starNear[i * 3 + 0] = x;
+      starNear[i * 3 + 1] = y;
+      starNear[i * 3 + 2] = z;
+    
+      // Far: 天空球（更远）
+      const far = sampleSkySphere(38);
+      starFar[i * 3 + 0] = far.x;
+      starFar[i * 3 + 1] = far.y;
+      starFar[i * 3 + 2] = far.z;
+    
+      starRand[i] = Math.random();
+      // 更小：0.35~1.6
+      starSize[i] = 0.35 + Math.pow(Math.random(), 1.6) * 1.25;
+    }
+    
+    starGeo.setAttribute("aNear", new THREE.BufferAttribute(starNear, 3));
+    starGeo.setAttribute("aFar", new THREE.BufferAttribute(starFar, 3));
+    starGeo.setAttribute("aRand", new THREE.BufferAttribute(starRand, 1));
+    starGeo.setAttribute("aSize", new THREE.BufferAttribute(starSize, 1));
+    
+    const starsMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime:  { value: 0 },
+        uMix:   { value: 0 },                 // 跟随合拢/散开
+        uFocus: { value: 0 },                 // 跟随放大态
+        uOrbit: { value: new THREE.Vector2(0, 0) } // 跟随相机/手势旋转（增强“跟手”感）
+      },
+      vertexShader: /* glsl */`
+        uniform float uTime;
+        uniform float uMix;
+        uniform float uFocus;
+        uniform vec2  uOrbit;
+    
+        attribute vec3 aNear;
+        attribute vec3 aFar;
+        attribute float aRand;
+        attribute float aSize;
+    
+        varying float vRand;
+        varying float vTw;
+    
+        void main(){
+          vRand = aRand;
+    
+          // 0: near (cone) -> 1: far (scatter)
+          vec3 pos = mix(aNear, aFar, uMix);
+    
+          // 手势“跟随”漂移：随时间 + orbit 产生细微流动
+          float t = uTime * (0.35 + aRand * 1.2);
+          float drift = (0.20 + 0.55 * uMix) * (1.0 - 0.35 * uFocus);
+          pos.x += sin(t + aRand * 12.0 + uOrbit.x * 1.2) * drift;
+          pos.y += cos(t * 0.9 + aRand * 9.0  + uOrbit.y * 1.1) * drift * 0.6;
+          pos.z += sin(t * 0.8 + aRand * 7.0  + uOrbit.x * 0.9) * drift;
+    
+          // focus：把背景稍微推远，突出前景照片
+          pos *= (1.0 + uFocus * 0.08);
+    
+          vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+          gl_Position = projectionMatrix * mv;
+    
+          float dist = -mv.z;
+          float ps = aSize * (220.0 / dist);
+          gl_PointSize = clamp(ps, 0.4, 2.4);
+    
+          // twinkle for bloom
+          vTw = 0.55 + 0.45 * sin(uTime * 2.0 + aRand * 19.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        varying float vRand;
+        varying float vTw;
+    
+        void main(){
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+    
+          float core = smoothstep(0.22, 0.0, d);
+          float halo = smoothstep(0.50, 0.15, d) * 0.55;
+    
+          // 金 + 微红 + 冷白点缀
+          vec3 gold = vec3(0.83, 0.69, 0.22);
+          vec3 red  = vec3(0.70, 0.07, 0.15);
+          vec3 white= vec3(0.95, 0.96, 1.00);
+    
+          float m = smoothstep(0.15, 0.95, vRand);
+          vec3 col = mix(white, gold, m);
+          col = mix(col, red, smoothstep(0.82, 0.98, vRand) * 0.35);
+    
+          float a = (core + halo) * (0.45 + 0.75 * vTw);
+          if(a < 0.01) discard;
+    
+          gl_FragColor = vec4(col * (1.2 + halo), a);
+        }
+      `
+    });
+    
+    const stars = new THREE.Points(starGeo, starsMat);
+    scene.add(stars);
+
 
     // ---------------------------
     // Instanced ornaments
@@ -869,15 +1004,16 @@
     });
 
     // Geometries
-    const sphereGeo = new THREE.SphereGeometry(0.12, 18, 18);
-    const cubeGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
-    const candyGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.36, 16, 1, true);
+    const sphereGeo = new THREE.SphereGeometry(0.02, 16, 16);
+    const cubeGeo   = new THREE.BoxGeometry(0.03, 0.03, 0.03);
+    const candyGeo  = new THREE.CylinderGeometry(0.012, 0.012, 0.10, 14, 1, true);
+
 
     // Instances
-    const goldBalls = new InstancedOrnaments({ count: 90, geometry: sphereGeo, material: goldMat, scaleRange: [0.75, 1.25], wobble: 0.14 });
-    const redBalls  = new InstancedOrnaments({ count: 60, geometry: sphereGeo, material: redMat,  scaleRange: [0.70, 1.20], wobble: 0.16 });
-    const greenCubes= new InstancedOrnaments({ count: 40, geometry: cubeGeo,  material: greenMat,scaleRange: [0.70, 1.15], wobble: 0.10 });
-    const candySticks= new InstancedOrnaments({ count: 28, geometry: candyGeo, material: candyMat, scaleRange: [0.85, 1.25], wobble: 0.12 });
+    const goldBalls  = new InstancedOrnaments({ count: 240, geometry: sphereGeo, material: goldMat,  scaleRange: [0.9, 1.7], wobble: 0.14 });
+    const redBalls   = new InstancedOrnaments({ count: 180, geometry: sphereGeo, material: redMat,   scaleRange: [0.9, 1.6], wobble: 0.16 });
+    const greenCubes = new InstancedOrnaments({ count: 120, geometry: cubeGeo,   material: greenMat, scaleRange: [0.9, 1.5], wobble: 0.10 });
+    const candySticks= new InstancedOrnaments({ count: 90,  geometry: candyGeo,  material: candyMat, scaleRange: [0.9, 1.7], wobble: 0.12 });
 
     // ---------------------------
     // Photo Cloud
@@ -891,15 +1027,10 @@
     function makePhotoMaterial(tex) {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-      // emissive helps bloom; keep roughness high for “cinema” softness
-      return new THREE.MeshStandardMaterial({
+    
+      // Basic：不吃光照，配合 bloom 仍然“高级发光”，而且更稳
+      return new THREE.MeshBasicMaterial({
         map: tex,
-        emissiveMap: tex,
-        emissive: new THREE.Color(0xffffff),
-        emissiveIntensity: 1.1,
-        metalness: 0.05,
-        roughness: 0.85,
         transparent: true,
         opacity: 1.0
       });
@@ -907,8 +1038,9 @@
 
     function addPhotoTexture(tex) {
       const aspect = tex.image ? (tex.image.width / tex.image.height) : 0.8;
-      const h = 0.78;
+      const h = 0.12;
       const w = h * clamp(aspect, 0.55, 1.55);
+
 
       const geo = new THREE.PlaneGeometry(w, h, 1, 1);
       const mat = makePhotoMaterial(tex);
@@ -956,7 +1088,7 @@
       }
       focusedIndex = -1;
 
-      const list = Array.from(files || []).slice(0, 36); // mobile safe
+      const list = Array.from(files || []).slice(0, 100); // mobile safe
       if (!list.length) {
         for (let i = 0; i < 6; i++) addPhotoTexture(makePlaceholderPhotoTexture("Merry\nChristmas"));
         return;
@@ -1348,7 +1480,7 @@
 
     function updatePhotos({ mix, time, focus }) {
       const focusPos = new THREE.Vector3(0, 2.2, 1.15); // in front of tree
-      const focusScale = 2.35;
+      const focusScale = 15;
 
       for (let i = 0; i < photoItems.length; i++) {
         const m = photoItems[i];
@@ -1451,6 +1583,11 @@
       pMat.uniforms.uTime.value = perfTime;
       pMat.uniforms.uMix.value = mix;
       pMat.uniforms.uFocus.value = focus;
+      starsMat.uniforms.uTime.value = perfTime;
+      starsMat.uniforms.uMix.value = mix;
+      starsMat.uniforms.uFocus.value = focus;
+      starsMat.uniforms.uOrbit.value.set(yaw, pitch);
+
 
       // ornaments
       goldBalls.update({ mix, time: perfTime, focus, focusDim: 1 });
