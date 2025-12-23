@@ -374,17 +374,20 @@
     const tips = document.getElementById("tips");
     const btnMusic = document.getElementById("btnMusic");
     const bgm = document.getElementById("bgm");
-    
-   
-    
+
+    // ---- Mobile/perf knobs (2~5) ----
+    const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const DPR_CAP = IS_MOBILE ? 1.25 : 2.0;
+    const MAX_ANISO = IS_MOBILE ? 2 : 8;
+
     const BGM_URL = "assets/music/newyear.mp3";
     let musicEnabled = false;
     let musicPrepared = false;
-    
+
     async function enableMusic() {
       try {
         if (!musicPrepared) {
-          bgm.src = BGM_URL;          // 直到用户触发才开始加载
+          bgm.src = BGM_URL;          // load only after user gesture
           bgm.load();
           musicPrepared = true;
         }
@@ -398,14 +401,13 @@
         btnMusic.textContent = "Music: Off";
       }
     }
-    
+
     function disableMusic() {
       bgm.pause();
-      // bgm.currentTime = 0;       // 若你想关闭后从头播放，取消注释
       musicEnabled = false;
       btnMusic.textContent = "Music: Off";
     }
-    
+
     btnMusic.addEventListener("click", () => {
       if (musicEnabled) disableMusic();
       else enableMusic();
@@ -427,44 +429,27 @@
       return current + (target - current) * t;
     };
 
-    function makeRadialSpriteTexture({ inner = "rgba(212,175,55,1)", outer = "rgba(212,175,55,0)" } = {}) {
-      const c = document.createElement("canvas");
-      c.width = 128; c.height = 128;
-      const ctx = c.getContext("2d");
-      const g = ctx.createRadialGradient(64, 64, 6, 64, 64, 64);
-      g.addColorStop(0, inner);
-      g.addColorStop(1, outer);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 128, 128);
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    }
     function makeStarSpriteTexture() {
       const c = document.createElement("canvas");
       c.width = 256; c.height = 256;
       const ctx = c.getContext("2d");
-    
-      // soft glow background
+
       const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 120);
       g.addColorStop(0, "rgba(212,175,55,0.55)");
       g.addColorStop(1, "rgba(212,175,55,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 256, 256);
-    
-      // draw a 5-point star
+
       ctx.save();
       ctx.translate(128, 128);
       ctx.rotate(-Math.PI / 2);
-    
+
       const spikes = 5;
       const outerR = 56;
       const innerR = 24;
       let rot = 0;
       const step = Math.PI / spikes;
-    
+
       ctx.beginPath();
       ctx.moveTo(Math.cos(rot) * outerR, Math.sin(rot) * outerR);
       for (let i = 0; i < spikes; i++) {
@@ -474,24 +459,22 @@
         rot += step;
       }
       ctx.closePath();
-    
-      // fill + stroke for crisp star
+
       ctx.fillStyle = "rgba(255,245,220,0.95)";
       ctx.fill();
-    
+
       ctx.lineWidth = 8;
       ctx.strokeStyle = "rgba(212,175,55,0.85)";
       ctx.stroke();
-    
+
       ctx.restore();
-    
+
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
       return tex;
     }
-
 
     function makeStripeTexture() {
       const c = document.createElement("canvas");
@@ -571,7 +554,7 @@
       alpha: false,
       powerPreference: "high-performance"
     });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(Math.min(DPR_CAP, window.devicePixelRatio || 1));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -587,7 +570,7 @@
     camera.position.set(0, 2.4, 8.6);
 
     // ---------------------------
-    // Selective Bloom (photos stay clean; glow-only objects bloom)
+    // Selective Bloom
     // ---------------------------
     const BLOOM_LAYER = 1;
 
@@ -610,7 +593,7 @@
         uniforms: {
           baseTexture: { value: null },
           bloomTexture: { value: bloomComposer.renderTarget2.texture },
-          uBloomIntensity: { value: 1.0 } // 控制 bloom 叠加强度
+          uBloomIntensity: { value: 1.0 }
         },
         vertexShader: /* glsl */`
           varying vec2 vUv;
@@ -627,7 +610,7 @@
           void main() {
             vec4 base = texture2D(baseTexture, vUv);
             vec4 bloom = texture2D(bloomTexture, vUv);
-            gl_FragColor = base + bloom * uBloomIntensity; // 乘一个系数
+            gl_FragColor = base + bloom * uBloomIntensity;
           }
         `
       }),
@@ -658,8 +641,7 @@
     // Tree container
     const tree = new THREE.Group();
     scene.add(tree);
-    tree.position.y = -0.75; // 整体下移，避免顶部 HUD 遮挡
-
+    tree.position.y = -0.75;
 
     // Ground
     const groundGeo = new THREE.CircleGeometry(14, 64);
@@ -676,10 +658,10 @@
     tree.add(ground);
 
     // ---------------------------
-    // Star Top (glowing star, NOT a glowing sun ball)
+    // Star Top
     // ---------------------------
     const starTex = makeStarSpriteTexture();
-    
+
     const starMat = new THREE.SpriteMaterial({
       map: starTex,
       transparent: true,
@@ -688,29 +670,26 @@
       blending: THREE.AdditiveBlending,
       toneMapped: false
     });
-    
-    // main star
+
     const treeHeight = 4.6;
     const baseRadius = 1.95;
+
     const star = new THREE.Sprite(starMat);
-    const STAR_Y = treeHeight + 0.22;  // ✅ 贴近树尖（相对 tree group）
+    const STAR_Y = treeHeight + 0.22;
     star.position.set(0, STAR_Y, 0);
     star.scale.set(0.95, 0.95, 1);
     tree.add(star);
-    
-    // secondary cross-star for premium sparkle
+
     const star2 = new THREE.Sprite(starMat.clone());
     star2.material.opacity = 0.65;
     star2.position.copy(star.position);
     star2.scale.set(0.62, 0.62, 1);
     star2.rotation.z = Math.PI / 4;
     tree.add(star2);
-    
-    // bloom only
+
     star.layers.enable(BLOOM_LAYER);
     star2.layers.enable(BLOOM_LAYER);
-    
-    // optional small 3D core (very subtle, avoid "ball" look)
+
     const starCore = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.06, 0),
       new THREE.MeshStandardMaterial({
@@ -725,13 +704,10 @@
     tree.add(starCore);
     starCore.layers.enable(BLOOM_LAYER);
 
-
     // ---------------------------
-    // Particle field (tree cone <-> scatter)
+    // Particle field
     // ---------------------------
     const PARTICLE_COUNT = 14000;
-
-    
 
     const pGeo = new THREE.BufferGeometry();
     const conePos = new Float32Array(PARTICLE_COUNT * 3);
@@ -853,7 +829,7 @@
     particles.layers.enable(BLOOM_LAYER);
 
     // ---------------------------
-    // Near-orbit sparkles (bloom layer)
+    // Near-orbit sparkles
     // ---------------------------
     const ORBIT_COUNT = 5200;
 
@@ -965,7 +941,7 @@
     orbitSparkles.layers.enable(BLOOM_LAYER);
 
     // ---------------------------
-    // Background starfield (bloom layer)
+    // Background starfield
     // ---------------------------
     const STAR_COUNT = 12000;
     const starGeo = new THREE.BufferGeometry();
@@ -1187,18 +1163,12 @@
     const greenCubes  = new InstancedOrnaments({ count: 420, geometry: cubeGeo,   material: greenMat, scaleRange: [0.9, 1.5], wobble: 0.09 });
     const candySticks = new InstancedOrnaments({ count: 260, geometry: candyGeo,  material: candyMat, scaleRange: [0.9, 1.7], wobble: 0.10 });
 
-    // If you want ornaments to bloom, uncomment:
-    // goldBalls.mesh.layers.enable(BLOOM_LAYER);
-    // redBalls.mesh.layers.enable(BLOOM_LAYER);
-    // greenCubes.mesh.layers.enable(BLOOM_LAYER);
-    // candySticks.mesh.layers.enable(BLOOM_LAYER);
-
     // ---------------------------
-    // Photo Cloud (photos stay clean; only frame glow blooms)
+    // Photo Cloud
     // ---------------------------
     const photosGroup = new THREE.Group();
     tree.add(photosGroup);
-    // Focus backplate: darken behind the enlarged photo (readability)
+
     const focusBackplate = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshBasicMaterial({
@@ -1211,16 +1181,17 @@
     );
     focusBackplate.renderOrder = 1;
     scene.add(focusBackplate);
-    
-    const _tmpDir = new THREE.Vector3();
 
+    const _tmpDir = new THREE.Vector3();
 
     const photoItems = [];
     let focusedIndex = -1;
 
     function makePhotoMaterial(tex) {
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+      // (3) Cap anisotropy on mobile
+      tex.anisotropy = Math.min(MAX_ANISO, renderer.capabilities.getMaxAnisotropy());
 
       // Keep photos crisp and unaffected by global toneMapping/exposure.
       return new THREE.MeshBasicMaterial({
@@ -1337,12 +1308,22 @@
       return mesh;
     }
 
+    function disposeTextureSafely(tex) {
+      if (!tex) return;
+      // If this texture was created from ImageBitmap, close() releases underlying bitmap memory
+      const img = tex.image;
+      if (img && typeof img.close === "function") {
+        try { img.close(); } catch (e) {}
+      }
+      tex.dispose?.();
+    }
+
     function applyTextureToPhoto(mesh, tex) {
       if (!mesh || !tex) return;
 
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      tex.generateMipmaps = false;                 // mobile-friendly
+      tex.anisotropy = Math.min(MAX_ANISO, renderer.capabilities.getMaxAnisotropy());
+      tex.generateMipmaps = false;
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
 
@@ -1359,7 +1340,6 @@
           mesh.userData.frameMesh.geometry = new THREE.PlaneGeometry(w * 1.06, h * 1.06, 1, 1);
         }
 
-        // glow mesh is the last child; keep it aligned too
         const glowMesh = mesh.children[mesh.children.length - 1];
         if (glowMesh && glowMesh.geometry) {
           glowMesh.geometry.dispose();
@@ -1373,33 +1353,25 @@
       const oldMap = mesh.material.map;
       mesh.material.map = tex;
       mesh.material.needsUpdate = true;
-      if (oldMap && oldMap !== tex) oldMap.dispose();
+
+      if (oldMap && oldMap !== tex) disposeTextureSafely(oldMap);
     }
 
     function clearPhotos() {
       for (const m of photoItems.splice(0, photoItems.length)) {
         photosGroup.remove(m);
-    
         if (m.geometry) m.geometry.dispose();
-    
-        if (m.material) {
-          if (m.material.map) m.material.map.dispose();
-          if (typeof m.material.dispose === "function") m.material.dispose();
-        }
-    
-        // dispose children (frame + glow)
-        const children = m.children || [];
-        for (const ch of children) {
+        if (m.material?.map) disposeTextureSafely(m.material.map);
+        m.material?.dispose?.();
+
+        for (const ch of (m.children || [])) {
           if (ch.geometry) ch.geometry.dispose();
-          if (ch.material) {
-            if (ch.material.map) ch.material.map.dispose();
-            if (typeof ch.material.dispose === "function") ch.material.dispose();
-          }
+          if (ch.material?.map) disposeTextureSafely(ch.material.map);
+          ch.material?.dispose?.();
         }
       }
       focusedIndex = -1;
     }
-
 
     // ---------------------------
     // State machine
@@ -1437,17 +1409,14 @@
     function pickRandomPhotoAndMessage() {
       if (!photoItems.length) return;
       focusedIndex = Math.floor(Math.random() * photoItems.length);
-    
+
       const m = photoItems[focusedIndex];
-      const ud = (m && m.userData) ? m.userData : {};
-    
-      const name = String(ud.name || "").trim() || "Anonymous";
-      const msg  = String(ud.message || "").trim() || "Happy Holidays!";
-    
+      const name = (m?.userData?.name || "").trim() || "Anonymous";
+      const msg  = (m?.userData?.message || "").trim() || "Happy Holidays!";
+
       focusTitleEl.textContent = `From: ${name}`;
       focusTextEl.textContent = msg;
     }
-
 
     // ---------------------------
     // Camera control (palm-driven + touch fallback)
@@ -1701,7 +1670,7 @@
     });
 
     // ---------------------------
-    // Photo update per frame (billboard + focus)
+    // Photo update per frame
     // ---------------------------
     const tmpV = new THREE.Vector3();
     const tmpV2 = new THREE.Vector3();
@@ -1737,24 +1706,21 @@
             const s = lerp(1.0, focusScale, focus);
             m.scale.setScalar(s);
             m.material.opacity = 1.0;
-            // --- Focus backplate (behind the focused photo) ---
+
+            // Focus backplate (behind the focused photo)
             backplateActive = true;
-            
-            // Use the same focusScale as the photo
+
             const bw = (ud.w || 0.12) * 1.35 * s;
             const bh = (ud.h || 0.12) * 1.35 * s;
-            
+
             focusBackplate.scale.set(bw, bh, 1);
-            
-            // place slightly behind the photo (away from camera)
+
             _tmpDir.subVectors(m.position, camera.position).normalize();
             focusBackplate.position.copy(m.position).addScaledVector(_tmpDir, 0.03);
-            
-            focusBackplate.lookAt(camera.position);
-            
-            // opacity ramps with focus
-            focusBackplate.material.opacity = 0.48 * focus;
 
+            focusBackplate.lookAt(camera.position);
+
+            focusBackplate.material.opacity = 0.48 * focus;
           } else {
             m.scale.setScalar(1.0);
             m.material.opacity = lerp(1.0, 0.75, focus);
@@ -1773,18 +1739,45 @@
         const tilt = (1.0 - (isFocused ? focus : 0.0));
         m.rotateZ(Math.sin(t * 0.6) * 0.06 * tilt);
       }
+
       if (!backplateActive) focusBackplate.material.opacity = 0.0;
     }
 
     // ---------------------------
     // Participants loading: stage-1 placeholders, stage-2 async avatar replace
+    // (2~5) cache + ImageBitmapLoader + lower concurrency on mobile
     // ---------------------------
+    const bitmapLoader = new THREE.ImageBitmapLoader();
+    bitmapLoader.setOptions({ imageOrientation: "none" });
+
+    function loadTextureViaBitmap(url) {
+      return new Promise((resolve, reject) => {
+        bitmapLoader.load(
+          url,
+          (bitmap) => {
+            const tex = new THREE.Texture(bitmap);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.flipY = false;
+            tex.generateMipmaps = false;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.anisotropy = Math.min(MAX_ANISO, renderer.capabilities.getMaxAnisotropy());
+            tex.needsUpdate = true;
+            resolve(tex);
+          },
+          undefined,
+          (e) => reject(e)
+        );
+      });
+    }
+
     async function loadParticipantsFromRepo() {
       const PARTICIPANTS_VERSION = "v1";
       const url = new URL("./assets/participants.json", location.href).toString() + `?${PARTICIPANTS_VERSION}`;
 
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        // (5) allow cache; version param controls refresh
+        const res = await fetch(url, { cache: "force-cache" });
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} — ${res.url}`);
 
         const text = (await res.text()).replace(/^\uFEFF/, "");
@@ -1821,10 +1814,8 @@
 
         const meshes = photoItems;
 
-        const loader = new THREE.TextureLoader();
-        loader.setCrossOrigin("anonymous");
-
-        const CONCURRENCY = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 4 : 6;
+        // (4) Lower concurrency on mobile to avoid decode spikes
+        const CONCURRENCY = IS_MOBILE ? 2 : 6;
         let done = 0;
 
         const updateProgress = () => {
@@ -1845,14 +1836,14 @@
               continue;
             }
 
-            await new Promise((resolve) => {
-              loader.load(
-                avatar,
-                (tex) => { applyTextureToPhoto(mesh, tex); done++; updateProgress(); resolve(); },
-                undefined,
-                () => { done++; updateProgress(); resolve(); }
-              );
-            });
+            try {
+              const tex = await loadTextureViaBitmap(avatar);
+              applyTextureToPhoto(mesh, tex);
+            } catch (e) {
+              // ignore per-item failures
+            } finally {
+              done++; updateProgress();
+            }
           }
         });
 
@@ -1940,17 +1931,16 @@
       greenCubes.update({ mix, time: perfTime, focus, focusDim: 1 });
       candySticks.update({ mix, time: perfTime, focus, focusDim: 1 });
 
-      // star shimmer (subtle, not a big sun blob)
+      // star shimmer
       star.material.opacity = 0.86 + Math.sin(perfTime * 2.1) * 0.06;
       star.scale.setScalar(0.92 + Math.sin(perfTime * 1.6) * 0.05);
-      
+
       star2.material.opacity = 0.58 + Math.sin(perfTime * 2.4 + 1.2) * 0.06;
       star2.scale.setScalar(0.60 + Math.sin(perfTime * 1.9 + 0.7) * 0.05);
       star2.rotation.z += dt * 0.35;
-      
+
       starCore.rotation.y += dt * 0.8;
       starCore.rotation.x += dt * 0.4;
-
 
       // photos
       updatePhotos({ mix, time: perfTime, focus });
@@ -1980,11 +1970,11 @@
       const h = window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setPixelRatio(Math.min(DPR_CAP, window.devicePixelRatio || 1)); // (2) mobile DPR cap
       renderer.setSize(w, h, false);
       bloomComposer.setSize(w, h);
       finalComposer.setSize(w, h);
-      if (typeof bloomPass.setSize === "function") bloomPass.setSize(w, h);
+      bloomPass.setSize?.(w, h);
     }
     window.addEventListener("resize", onResize);
 
