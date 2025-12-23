@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Hand-Driven Xmas Tree · Three.js + MediaPipe Hands</title>
 
-  <!-- ES Module Shims (Import Maps compatibility on older mobile Safari) -->
+  <!-- ES Module Shims (Import Maps for broader browser support) -->
   <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
 
   <script type="importmap-shim">
@@ -18,7 +18,7 @@
   }
   </script>
 
-  <!-- MediaPipe Hands (pinned version for stability) -->
+  <!-- MediaPipe Hands -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 
   <style>
@@ -30,7 +30,6 @@
       --panel: rgba(10,18,16,.62);
       --panel2: rgba(4,8,10,.45);
       --line: rgba(212,175,55,.35);
-      --soft: rgba(255,255,255,.08);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.65);
     }
@@ -40,14 +39,11 @@
       margin:0;
       background: radial-gradient(120% 120% at 50% 30%, #0a1412 0%, #06080a 55%, #040506 100%);
       color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       overflow:hidden;
     }
 
-    #app{
-      position:fixed; inset:0;
-      display:block;
-    }
+    #app{ position:fixed; inset:0; }
 
     canvas#gl{
       position:absolute; inset:0;
@@ -56,7 +52,7 @@
       touch-action:none;
     }
 
-    /* Cinematic: vignette + haze */
+    /* Cinematic: vignette + gentle haze */
     .cinema-vignette{
       position:absolute; inset:0;
       pointer-events:none;
@@ -88,8 +84,7 @@
 
     .hud{
       position:absolute;
-      left:12px; right:12px;
-      top:12px;
+      left:12px; right:12px; top:12px;
       display:flex;
       gap:10px;
       align-items:flex-start;
@@ -99,7 +94,7 @@
     .panel{
       pointer-events:auto;
       flex:1 1 auto;
-      max-width:820px;
+      max-width:860px;
       padding:12px 12px 10px;
       border:1px solid var(--line);
       border-radius:14px;
@@ -122,12 +117,10 @@
     .badge{
       width:12px; height:12px; border-radius:999px;
       background:var(--gold);
-      box-shadow:
-        0 0 0 2px rgba(212,175,55,.18),
-        0 0 18px rgba(212,175,55,.45);
+      box-shadow: 0 0 0 2px rgba(212,175,55,.18), 0 0 18px rgba(212,175,55,.45);
     }
     .title{
-      font-weight:700;
+      font-weight:750;
       letter-spacing:.3px;
       font-size:14px;
       line-height:1.2;
@@ -155,7 +148,7 @@
       border-radius:12px;
       padding:10px 12px;
       font-size:12px;
-      font-weight:650;
+      font-weight:700;
       letter-spacing:.2px;
       box-shadow: 0 10px 24px rgba(0,0,0,.35);
       cursor:pointer;
@@ -167,9 +160,6 @@
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.18));
       color: rgba(255,255,255,.86);
     }
-
-    .dot-red{ width:8px; height:8px; border-radius:999px; background:var(--red); box-shadow:0 0 14px rgba(177,18,38,.55); }
-    .dot-green{ width:8px; height:8px; border-radius:999px; background:var(--matte-green); box-shadow:0 0 14px rgba(11,61,46,.55); border:1px solid rgba(212,175,55,.25); }
 
     .tips{
       margin-top:10px;
@@ -190,10 +180,7 @@
       gap:8px;
       align-items:center;
     }
-    .chip b{
-      color:rgba(255,255,255,.92);
-      font-weight:700;
-    }
+    .chip b{ color:rgba(255,255,255,.92); font-weight:800; }
 
     .status{
       margin-left:auto;
@@ -229,7 +216,7 @@
     }
     .focusCard{
       pointer-events:auto;
-      width:min(680px, calc(100vw - 24px));
+      width:min(720px, calc(100vw - 24px));
       border-radius:18px;
       border:1px solid rgba(212,175,55,.40);
       background: linear-gradient(180deg, rgba(0,0,0,.52), rgba(8,12,14,.62));
@@ -253,7 +240,7 @@
       position:relative;
     }
     .focusCard p{
-      margin:10px 0 0;
+      margin:8px 0 0;
       font-size:13px;
       line-height:1.55;
       color: rgba(255,255,255,.86);
@@ -278,7 +265,7 @@
       padding:6px 10px;
     }
 
-    /* Hidden video source (required for MediaPipe) */
+    /* Hidden camera element (still required by MediaPipe) */
     video#cam{
       position:absolute;
       right:12px; bottom:12px;
@@ -309,47 +296,41 @@
           <div class="brand">
             <span class="badge"></span>
             <div>
-              <div class="title">Hand-Driven Sketch Control · 3D Particles + Photo Cloud Christmas Tree</div>
-              <div class="subtitle">Three.js / WebGL · MediaPipe Hands · Cinematic Bloom</div>
+              <div class="title">Hand-Driven 3D Xmas Tree · Particles + Photo Cloud</div>
+              <div class="subtitle">Three.js / WebGL · MediaPipe Hands · Selective Bloom</div>
             </div>
           </div>
 
           <div class="controls">
             <button id="btnStart">Enable Hand Tracking</button>
-            <button id="btnReset" class="secondary">Reset Scene</button>
-            <button id="btnHelp" class="secondary">How to Use</button>
+            <button id="btnReset" class="secondary">Reset</button>
+            <button id="btnHelp" class="secondary">Tips</button>
           </div>
 
           <div class="status">
             <span id="led" class="led"></span>
-            <span id="statusText">Loading participants…</span>
+            <span id="statusText">Default: Cone mode (touch drag works in Scatter)</span>
           </div>
         </div>
 
         <div class="tips" id="tips" style="display:none;">
-          <span class="chip"><span class="dot-green"></span><b>Open palm</b> → Scatter mode</span>
-          <span class="chip"><span class="dot-red"></span><b>Close fist</b> → Cone mode</span>
-          <span class="chip"><b>Move your palm</b> → Rotate (in Scatter mode)</span>
-          <span class="chip"><b>Thumb–index pinch</b> → “Click” to pick a photo + greeting</span>
-          <span class="chip"><b>Touch drag</b> → Rotate (Scatter) · <b>Double-tap</b> → Pick a photo</span>
+          <span class="chip"><b>Open hand</b> → Scatter mode</span>
+          <span class="chip"><b>Close hand</b> → Cone mode</span>
+          <span class="chip"><b>Move palm</b> → Rotate (in Scatter)</span>
+          <span class="chip"><b>Pinch</b> → Pick a random photo + message</span>
+          <span class="chip"><b>Double-tap</b> → Pick (touch fallback)</span>
         </div>
       </div>
     </div>
 
     <div id="focusOverlay" class="focusOverlay">
       <div class="focusCard">
-        <h3 id="focusTitle">Holiday Greeting</h3>
-
-        <div class="small" style="justify-content:flex-start; gap:12px; margin-top:8px;">
-          <span class="kbd" id="focusFrom">From: —</span>
-        </div>
-
+        <h3 id="focusTitle">Holiday Message</h3>
         <p id="focusText"></p>
-
         <div class="small">
-          <span class="kbd">Close fist: Cone mode</span>
-          <span class="kbd">Open palm: Scatter mode</span>
-          <span class="kbd">Pinch again: Next random photo</span>
+          <span class="kbd">Close hand: Cone</span>
+          <span class="kbd">Open hand: Scatter</span>
+          <span class="kbd">Pinch again: Next</span>
         </div>
       </div>
     </div>
@@ -359,19 +340,12 @@
 
   <script type="module-shim">
     /*
-      Embedded resources (no manual upload needed):
-      - Place avatars in:  /assets/avatars/*.jpg|png
-      - Create:            /assets/participants.json
-
-      Example participants.json:
-      [
-        { "name": "Alice Wang", "avatar": "assets/avatars/alice_wang.jpg", "message": "Merry Christmas!" },
-        { "name": "Kevin Zhang", "avatar": "assets/avatars/kevin_zhang.png", "message": "Happy New Year!" }
-      ]
-
       Notes:
-      - Camera permission typically requires HTTPS (or localhost).
-      - On iOS, Safari is recommended due to WebKit limitations in other shells.
+      - Mobile camera access typically requires HTTPS (or localhost).
+      - On iOS, Safari is recommended.
+      - Put participants + avatars into:
+          /assets/participants.json
+          /assets/avatars/*.webp (recommended)
     */
 
     import * as THREE from "three";
@@ -379,6 +353,7 @@
     import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
     import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
     import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+    import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
     const COLORS = {
       matteGreen: new THREE.Color("#0b3d2e"),
@@ -397,8 +372,8 @@
     const tips = document.getElementById("tips");
 
     const focusOverlay = document.getElementById("focusOverlay");
+    const focusTitleEl = document.getElementById("focusTitle");
     const focusTextEl = document.getElementById("focusText");
-    const focusFromEl = document.getElementById("focusFrom");
 
     const videoEl = document.getElementById("cam");
 
@@ -484,11 +459,11 @@
       ctx.strokeRect(18, 18, c.width - 36, c.height - 36);
 
       ctx.fillStyle = "rgba(255,255,255,.92)";
-      ctx.font = "700 48px ui-sans-serif, system-ui, -apple-system";
+      ctx.font = "700 44px ui-sans-serif, system-ui, -apple-system";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const lines = String(label).split("\n");
-      lines.forEach((ln, idx) => ctx.fillText(ln, c.width / 2, c.height * 0.55 + idx * 54));
+      lines.forEach((ln, idx) => ctx.fillText(ln, c.width / 2, c.height * 0.55 + idx * 52));
 
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -510,7 +485,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.08;
 
     const scene = new THREE.Scene();
     scene.background = COLORS.bg0;
@@ -521,17 +496,53 @@
     const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 120);
     camera.position.set(0, 2.4, 8.6);
 
-    // Postprocessing (cinematic bloom)
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
+    // ---------------------------
+    // Selective Bloom (photos stay clean; glow-only objects bloom)
+    // ---------------------------
+    const BLOOM_LAYER = 1;
+
+    const bloomComposer = new EffectComposer(renderer);
+    bloomComposer.addPass(new RenderPass(scene, camera));
+
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.22,   // strength
-      0.55,   // radius
-      0.18    // threshold
+      1.10,
+      0.55,
+      0.18
     );
-    composer.addPass(bloomPass);
-    composer.addPass(new OutputPass());
+    bloomComposer.addPass(bloomPass);
+
+    const finalComposer = new EffectComposer(renderer);
+    finalComposer.addPass(new RenderPass(scene, camera));
+
+    const bloomMixPass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          baseTexture: { value: null },
+          bloomTexture: { value: bloomComposer.renderTarget2.texture }
+        },
+        vertexShader: /* glsl */`
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+          }
+        `,
+        fragmentShader: /* glsl */`
+          uniform sampler2D baseTexture;
+          uniform sampler2D bloomTexture;
+          varying vec2 vUv;
+          void main() {
+            vec4 base = texture2D(baseTexture, vUv);
+            vec4 bloom = texture2D(bloomTexture, vUv);
+            gl_FragColor = base + bloom;
+          }
+        `
+      }),
+      "baseTexture"
+    );
+    finalComposer.addPass(bloomMixPass);
+    finalComposer.addPass(new OutputPass());
 
     // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.22));
@@ -557,32 +568,29 @@
     scene.add(tree);
 
     // Ground
-    const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(14, 64),
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color("#06110d"),
-        roughness: 0.95,
-        metalness: 0.05,
-        transparent: true,
-        opacity: 0.9
-      })
-    );
+    const groundGeo = new THREE.CircleGeometry(14, 64);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#06110d"),
+      roughness: 0.95,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.9
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     tree.add(ground);
 
-    // Star / Top glow
-    const starGlowTex = makeRadialSpriteTexture({
-      inner: "rgba(212,175,55,1)",
-      outer: "rgba(212,175,55,0)"
-    });
-    const star = new THREE.Sprite(new THREE.SpriteMaterial({
+    // Top star glow (bloom layer)
+    const starGlowTex = makeRadialSpriteTexture({ inner: "rgba(212,175,55,1)", outer: "rgba(212,175,55,0)" });
+    const starSpriteMat = new THREE.SpriteMaterial({
       map: starGlowTex,
       color: 0xffffff,
       transparent: true,
       opacity: 0.9,
       depthWrite: false
-    }));
+    });
+    const star = new THREE.Sprite(starSpriteMat);
     star.position.set(0, 4.45, 0);
     star.scale.set(2.25, 2.25, 1);
     tree.add(star);
@@ -600,10 +608,16 @@
     starCore.position.copy(star.position);
     tree.add(starCore);
 
+    star.layers.enable(BLOOM_LAYER);
+    starCore.layers.enable(BLOOM_LAYER);
+
     // ---------------------------
-    // Particles (shader-based sparkle cloud)
+    // Particle field (tree cone <-> scatter)
     // ---------------------------
     const PARTICLE_COUNT = 14000;
+
+    const treeHeight = 4.6;
+    const baseRadius = 1.95;
 
     const pGeo = new THREE.BufferGeometry();
     const conePos = new Float32Array(PARTICLE_COUNT * 3);
@@ -611,8 +625,21 @@
     const rand = new Float32Array(PARTICLE_COUNT);
     const size = new Float32Array(PARTICLE_COUNT);
 
-    const treeHeight = 4.6;
-    const baseRadius = 1.95;
+    function sampleTreeConeDense() {
+      const u = Math.pow(Math.random(), 0.58);
+      const y = u * treeHeight;
+      const maxR = (1 - (y / treeHeight)) * baseRadius;
+      const rVol = Math.sqrt(Math.random()) * maxR;
+      const rShell = maxR * (0.82 + Math.random() * 0.18);
+      const r = lerp(rVol, rShell, 0.62);
+      const a = Math.random() * Math.PI * 2;
+      let x = Math.cos(a) * r;
+      let z = Math.sin(a) * r;
+      const twist = (1 - y / treeHeight) * 0.65;
+      const cx = x * Math.cos(twist) - z * Math.sin(twist);
+      const cz = x * Math.sin(twist) + z * Math.cos(twist);
+      return new THREE.Vector3(cx, y + 0.12, cz);
+    }
 
     function sampleScatter() {
       const R = 5.2;
@@ -627,39 +654,11 @@
       return new THREE.Vector3(x, y, z);
     }
 
-    function sampleTreeConeDense() {
-      const u = Math.pow(Math.random(), 0.58);
-      const y = u * treeHeight;
-
-      const maxR = (1 - (y / treeHeight)) * baseRadius;
-
-      const rVol = Math.sqrt(Math.random()) * maxR;
-      const rShell = maxR * (0.82 + Math.random() * 0.18);
-      const r = lerp(rVol, rShell, 0.62);
-
-      const a = Math.random() * Math.PI * 2;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-
-      const twist = (1 - y / treeHeight) * 0.65;
-      const cx = x * Math.cos(twist) - z * Math.sin(twist);
-      const cz = x * Math.sin(twist) + z * Math.cos(twist);
-
-      return new THREE.Vector3(cx, y + 0.12, cz);
-    }
-
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const c = sampleTreeConeDense();
       const s = sampleScatter();
-
-      conePos[i * 3 + 0] = c.x;
-      conePos[i * 3 + 1] = c.y;
-      conePos[i * 3 + 2] = c.z;
-
-      scatterPos[i * 3 + 0] = s.x;
-      scatterPos[i * 3 + 1] = s.y;
-      scatterPos[i * 3 + 2] = s.z;
-
+      conePos[i*3+0] = c.x; conePos[i*3+1] = c.y; conePos[i*3+2] = c.z;
+      scatterPos[i*3+0] = s.x; scatterPos[i*3+1] = s.y; scatterPos[i*3+2] = s.z;
       rand[i] = Math.random();
       size[i] = 1.2 + Math.random() * 2.6;
     }
@@ -673,11 +672,7 @@
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: {
-        uTime: { value: 0 },
-        uMix: { value: 0 },
-        uFocus: { value: 0 },
-      },
+      uniforms: { uTime:{value:0}, uMix:{value:0}, uFocus:{value:0} },
       vertexShader: /* glsl */`
         uniform float uTime;
         uniform float uMix;
@@ -691,7 +686,6 @@
 
         void main(){
           vRand = aRand;
-
           vec3 pos = mix(aCone, aScatter, uMix);
 
           float t = uTime * (0.7 + aRand * 1.1);
@@ -699,8 +693,7 @@
           pos.x += cos(t * 1.13 + aRand * 3.1) * (0.03 + aRand * 0.08);
           pos.z += sin(t * 0.97 + aRand * 2.7) * (0.03 + aRand * 0.08);
 
-          float push = uFocus * (0.10 + aRand * 0.18);
-          pos *= (1.0 + push);
+          pos *= (1.0 + uFocus * (0.10 + aRand * 0.18));
 
           vec4 mv = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mv;
@@ -709,7 +702,6 @@
           float ps = aSize * (260.0 / dist);
 
           vGlow = 0.55 + 0.45 * sin(uTime * 2.2 + aRand * 12.0);
-
           gl_PointSize = clamp(ps, 1.0, 8.0);
         }
       `,
@@ -742,10 +734,12 @@
       `
     });
 
-    tree.add(new THREE.Points(pGeo, pMat));
+    const particles = new THREE.Points(pGeo, pMat);
+    tree.add(particles);
+    particles.layers.enable(BLOOM_LAYER);
 
     // ---------------------------
-    // Near Orbit Sparkles (rotate around the tree)
+    // Near-orbit sparkles (bloom layer)
     // ---------------------------
     const ORBIT_COUNT = 5200;
 
@@ -760,7 +754,6 @@
     for (let i = 0; i < ORBIT_COUNT; i++) {
       const y = Math.pow(Math.random(), 0.62) * treeHeight + 0.15;
       const maxR = (1 - (y / treeHeight)) * baseRadius;
-
       const rad = maxR * (1.05 + Math.random() * 0.45) + 0.05;
       const theta = i * 0.61803398875 * Math.PI * 2 + Math.random() * 0.35;
 
@@ -769,9 +762,7 @@
       aRad[i] = rad;
 
       const s = sampleScatter();
-      aScatter[i * 3 + 0] = s.x;
-      aScatter[i * 3 + 1] = s.y;
-      aScatter[i * 3 + 2] = s.z;
+      aScatter[i*3+0] = s.x; aScatter[i*3+1] = s.y; aScatter[i*3+2] = s.z;
 
       aRand2[i] = Math.random();
       aSize2[i] = 0.55 + Math.pow(Math.random(), 1.4) * 1.35;
@@ -788,11 +779,7 @@
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: {
-        uTime: { value: 0 },
-        uMix: { value: 0 },
-        uFocus: { value: 0 }
-      },
+      uniforms: { uTime:{value:0}, uMix:{value:0}, uFocus:{value:0} },
       vertexShader: /* glsl */`
         uniform float uTime;
         uniform float uMix;
@@ -859,10 +846,12 @@
       `
     });
 
-    tree.add(new THREE.Points(orbitGeo, orbitMat));
+    const orbitSparkles = new THREE.Points(orbitGeo, orbitMat);
+    tree.add(orbitSparkles);
+    orbitSparkles.layers.enable(BLOOM_LAYER);
 
     // ---------------------------
-    // Background Starfield
+    // Background starfield (bloom layer)
     // ---------------------------
     const STAR_COUNT = 12000;
     const starGeo = new THREE.BufferGeometry();
@@ -888,17 +877,14 @@
       const y = 0.8 + Math.pow(Math.random(), 0.55) * 6.2;
       const r = (0.6 + Math.random() * 0.7) * (2.6 + (1 - y / 7.0) * 2.4);
       const a = Math.random() * Math.PI * 2;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-
-      starNear[i * 3 + 0] = x;
-      starNear[i * 3 + 1] = y;
-      starNear[i * 3 + 2] = z;
+      starNear[i*3+0] = Math.cos(a) * r;
+      starNear[i*3+1] = y;
+      starNear[i*3+2] = Math.sin(a) * r;
 
       const far = sampleSkySphere(38);
-      starFar[i * 3 + 0] = far.x;
-      starFar[i * 3 + 1] = far.y;
-      starFar[i * 3 + 2] = far.z;
+      starFar[i*3+0] = far.x;
+      starFar[i*3+1] = far.y;
+      starFar[i*3+2] = far.z;
 
       starRand[i] = Math.random();
       starSize[i] = 0.35 + Math.pow(Math.random(), 1.6) * 1.25;
@@ -913,12 +899,7 @@
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: {
-        uTime:  { value: 0 },
-        uMix:   { value: 0 },
-        uFocus: { value: 0 },
-        uOrbit: { value: new THREE.Vector2(0, 0) }
-      },
+      uniforms: { uTime:{value:0}, uMix:{value:0}, uFocus:{value:0}, uOrbit:{value:new THREE.Vector2(0,0)} },
       vertexShader: /* glsl */`
         uniform float uTime;
         uniform float uMix;
@@ -935,6 +916,7 @@
 
         void main(){
           vRand = aRand;
+
           vec3 pos = mix(aNear, aFar, uMix);
 
           float t = uTime * (0.35 + aRand * 1.2);
@@ -983,13 +965,15 @@
       `
     });
 
-    scene.add(new THREE.Points(starGeo, starsMat));
+    const stars = new THREE.Points(starGeo, starsMat);
+    scene.add(stars);
+    stars.layers.enable(BLOOM_LAYER);
 
     // ---------------------------
     // Instanced ornaments
     // ---------------------------
     class InstancedOrnaments {
-      constructor({ count, geometry, material, scaleRange = [0.08, 0.16], wobble = 0.12 }) {
+      constructor({ count, geometry, material, scaleRange = [0.9, 1.7], wobble = 0.12 }) {
         this.count = count;
         this.mesh = new THREE.InstancedMesh(geometry, material, count);
         this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -1015,6 +999,7 @@
 
       update({ mix, time, focus, focusDim = 0 }) {
         const obj = new THREE.Object3D();
+
         for (let i = 0; i < this.count; i++) {
           const a = this._cone[i];
           const b = this._scatter[i];
@@ -1069,28 +1054,33 @@
       emissiveIntensity: 0.9
     });
 
+    const stripeTex = makeStripeTexture();
     const candyMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       metalness: 0.35,
       roughness: 0.55,
-      map: makeStripeTexture(),
+      map: stripeTex,
       emissive: new THREE.Color("#ffffff").multiplyScalar(0.08),
       emissiveIntensity: 0.9
     });
 
-    // Small ornaments
     const sphereGeo = new THREE.SphereGeometry(0.02, 16, 16);
     const cubeGeo   = new THREE.BoxGeometry(0.03, 0.03, 0.03);
     const candyGeo  = new THREE.CylinderGeometry(0.012, 0.012, 0.10, 14, 1, true);
 
-    // Dense tree ornaments
     const goldBalls   = new InstancedOrnaments({ count: 900, geometry: sphereGeo, material: goldMat,  scaleRange: [0.9, 1.7], wobble: 0.12 });
     const redBalls    = new InstancedOrnaments({ count: 650, geometry: sphereGeo, material: redMat,   scaleRange: [0.9, 1.6], wobble: 0.13 });
     const greenCubes  = new InstancedOrnaments({ count: 420, geometry: cubeGeo,   material: greenMat, scaleRange: [0.9, 1.5], wobble: 0.09 });
     const candySticks = new InstancedOrnaments({ count: 260, geometry: candyGeo,  material: candyMat, scaleRange: [0.9, 1.7], wobble: 0.10 });
 
+    // If you want ornaments to bloom, uncomment:
+    // goldBalls.mesh.layers.enable(BLOOM_LAYER);
+    // redBalls.mesh.layers.enable(BLOOM_LAYER);
+    // greenCubes.mesh.layers.enable(BLOOM_LAYER);
+    // candySticks.mesh.layers.enable(BLOOM_LAYER);
+
     // ---------------------------
-    // Photo Cloud (embedded participants)
+    // Photo Cloud (photos stay clean; only frame glow blooms)
     // ---------------------------
     const photosGroup = new THREE.Group();
     tree.add(photosGroup);
@@ -1101,163 +1091,182 @@
     function makePhotoMaterial(tex) {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      return new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 1.0 });
+
+      // Keep photos crisp and unaffected by global toneMapping/exposure.
+      return new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 1.0,
+        toneMapped: false
+      });
     }
 
-    function clearPhotos() {
-      for (const m of photoItems.splice(0, photoItems.length)) {
-        photosGroup.remove(m);
-        m.geometry.dispose();
-        if (m.material?.map) m.material.map.dispose();
-        m.material?.dispose?.();
-        if (m.children?.length) {
-          for (const ch of m.children) {
-            ch.geometry?.dispose?.();
-            ch.material?.dispose?.();
-          }
-        }
-      }
-      focusedIndex = -1;
-    }
+    const FRAME_GLOW_TIME = { value: 0 };
 
     function addPhotoTexture(tex, meta = {}) {
       const aspect = tex.image ? (tex.image.width / tex.image.height) : 0.8;
       const h = 0.12;
       const w = h * clamp(aspect, 0.55, 1.55);
 
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h, 1, 1), makePhotoMaterial(tex));
-      mesh.renderOrder = 2;
+      const geo = new THREE.PlaneGeometry(w, h, 1, 1);
+      const mat = makePhotoMaterial(tex);
+      const mesh = new THREE.Mesh(geo, mat);
 
+      mesh.renderOrder = 2;
       mesh.userData = {
         cone: (() => {
           const v = sampleTreeConeDense();
           const push = 1.10;
-          v.x *= push; v.z *= push;
+          v.x *= push;
+          v.z *= push;
           return v;
         })(),
         scatter: sampleScatter(),
+        baseScale: 1.0,
         seed: Math.random() * 1000,
         w, h,
-        fromName: String(meta.name || "Anonymous"),
-        message: String(meta.message || "Happy Holidays!")
+
+        name: String(meta.name || ""),
+        message: String(meta.message || ""),
+
+        frameMesh: null
       };
 
-      // Gold frame
-      const frame = new THREE.Mesh(
-        new THREE.PlaneGeometry(w * 1.06, h * 1.06),
-        new THREE.MeshStandardMaterial({
-          color: COLORS.gold,
-          metalness: 1.0,
-          roughness: 0.28,
-          emissive: COLORS.gold.clone().multiplyScalar(0.22),
-          emissiveIntensity: 1.0,
-          transparent: true,
-          opacity: 0.82
-        })
-      );
+      // Metallic frame (subtle, not overbright)
+      const frameGeo = new THREE.PlaneGeometry(w * 1.06, h * 1.06);
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: COLORS.gold,
+        metalness: 1.0,
+        roughness: 0.28,
+        emissive: COLORS.gold.clone().multiplyScalar(0.12),
+        emissiveIntensity: 0.25,
+        transparent: true,
+        opacity: 0.70
+      });
+      const frame = new THREE.Mesh(frameGeo, frameMat);
       frame.position.z = -0.01;
       mesh.add(frame);
+      mesh.userData.frameMesh = frame;
+
+      // Flowing gold glow overlay (bloom layer only)
+      const glowMat = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uTime: FRAME_GLOW_TIME,
+          uSeed: { value: Math.random() * 10.0 }
+        },
+        vertexShader: /* glsl */`
+          varying vec2 vUv;
+          void main(){
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */`
+          precision highp float;
+          varying vec2 vUv;
+          uniform float uTime;
+          uniform float uSeed;
+
+          float hash(float n){ return fract(sin(n)*43758.5453123); }
+
+          void main(){
+            vec2 uv = vUv;
+
+            float edge = min(min(uv.x, 1.0-uv.x), min(uv.y, 1.0-uv.y));
+
+            float thickness = 0.060;
+            float soft = 0.020;
+            float border = 1.0 - smoothstep(thickness, thickness + soft, edge);
+
+            float t = uTime * 0.9 + uSeed;
+            float sweep = 0.5 + 0.5 * sin((uv.x*7.0 + uv.y*5.0) * 6.2831 + t*2.0);
+
+            float n = hash(floor((uv.x+uv.y)*120.0) + floor(t*10.0)*13.0);
+            float sparkle = smoothstep(0.985, 1.0, n) * (0.6 + 0.4*sweep);
+
+            float a = border * (0.10 + 0.25*sweep) + border * sparkle * 0.8;
+            if(a < 0.01) discard;
+
+            vec3 gold = vec3(0.83, 0.69, 0.22);
+            gl_FragColor = vec4(gold * (1.2 + 0.8*sweep), a);
+          }
+        `
+      });
+
+      const glow = new THREE.Mesh(frameGeo.clone(), glowMat);
+      glow.position.z = 0.005;
+      mesh.add(glow);
+      glow.layers.enable(BLOOM_LAYER);
 
       photosGroup.add(mesh);
       photoItems.push(mesh);
       if (focusedIndex === -1) focusedIndex = 0;
+      return mesh;
     }
 
-    // Fallback placeholders (used until participants.json loads)
-    const fallbackParticipants = [
-      { name: "China Team", avatarLabel: "Happy\nHolidays", message: "Wishing you peace, joy, and a wonderful New Year." },
-      { name: "China Team", avatarLabel: "Merry\nChristmas", message: "Thank you for the great collaboration. Merry Christmas!" },
-      { name: "China Team", avatarLabel: "Season's\nGreetings", message: "Warm wishes to you and your family this holiday season." },
-      { name: "China Team", avatarLabel: "Happy\nNew Year", message: "May 2026 bring you success, health, and happiness." },
-      { name: "China Team", avatarLabel: "Cheers!", message: "Cheers to teamwork and shared wins. Happy holidays!" },
-      { name: "China Team", avatarLabel: "Best\nWishes", message: "Best wishes for a bright and joyful season." }
-    ];
-    for (const p of fallbackParticipants) addPhotoTexture(makePlaceholderPhotoTexture(p.avatarLabel), p);
+    function applyTextureToPhoto(mesh, tex) {
+      if (!mesh || !tex) return;
 
-    async function loadParticipantsFromRepo() {
-      // 建议：只在你更新 participants.json 后手动改这个版本号（不要用 Date.now()）
-      const PARTICIPANTS_VERSION = "v1";
-      const url = new URL("./assets/participants.json", location.href).toString() + `?${PARTICIPANTS_VERSION}`;
-    
-      try {
-        const res = await fetch(url, { cache: "no-store" }); // JSON 允许不缓存，保证更新立即生效
-        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} — ${res.url}`);
-    
-        const text = (await res.text()).replace(/^\uFEFF/, ""); // 去 BOM
-        const data = JSON.parse(text);
-        const list = Array.isArray(data) ? data : (Array.isArray(data.participants) ? data.participants : []);
-        if (!list.length) throw new Error("participants.json is empty");
-    
-        statusText.textContent = "Loading participant photos…";
-        clearPhotos();
-    
-        const loader = new THREE.TextureLoader();
-        loader.setCrossOrigin("anonymous");
-    
-        const max = Math.min(120, list.length);
-    
-        // 关键：限并发并行（手机建议 4～6）
-        const CONCURRENCY = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 4 : 6;
-    
-        let done = 0;
-        const updateProgress = () => {
-          statusText.textContent = `Loading photos… ${done}/${max}`;
-        };
-        updateProgress();
-    
-        // 将 list 切片，避免一次性 Promise.all 爆内存
-        let cursor = 0;
-        const workers = new Array(CONCURRENCY).fill(0).map(async () => {
-          while (cursor < max) {
-            const i = cursor++;
-            const it = list[i] || {};
-            const name = String(it.name || "Anonymous");
-            const message = String(it.message || "Happy Holidays!");
-            const avatar = String(it.avatar || "");
-    
-            // 头像不要 cache-bust，让浏览器缓存它（非常重要）
-            await new Promise((resolve) => {
-              if (!avatar) {
-                addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
-                done++; updateProgress();
-                resolve();
-                return;
-              }
-              loader.load(
-                avatar,
-                (tex) => {
-                  addPhotoTexture(tex, { name, message });
-                  done++; updateProgress();
-                  resolve();
-                },
-                undefined,
-                () => {
-                  addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
-                  done++; updateProgress();
-                  resolve();
-                }
-              );
-            });
-          }
-        });
-    
-        await Promise.all(workers);
-    
-        pickRandomPhotoAndGreeting();
-        statusText.textContent = "Default: Cone mode (enable hand tracking)";
-    
-      } catch (err) {
-        console.error("Failed to load participants.json:", err);
-        statusText.textContent = `Failed to load assets/participants.json: ${err.message}`;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.generateMipmaps = false;                 // mobile-friendly
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+
+      const aspect = tex.image ? (tex.image.width / tex.image.height) : 0.8;
+      const h = mesh.userData.h || 0.12;
+      const w = h * clamp(aspect, 0.55, 1.55);
+
+      if (Math.abs((mesh.userData.w || w) - w) > 1e-4) {
+        mesh.geometry.dispose();
+        mesh.geometry = new THREE.PlaneGeometry(w, h, 1, 1);
+
+        if (mesh.userData.frameMesh) {
+          mesh.userData.frameMesh.geometry.dispose();
+          mesh.userData.frameMesh.geometry = new THREE.PlaneGeometry(w * 1.06, h * 1.06, 1, 1);
+        }
+
+        // glow mesh is the last child; keep it aligned too
+        const glowMesh = mesh.children[mesh.children.length - 1];
+        if (glowMesh && glowMesh.geometry) {
+          glowMesh.geometry.dispose();
+          glowMesh.geometry = new THREE.PlaneGeometry(w * 1.06, h * 1.06, 1, 1);
+        }
+
+        mesh.userData.w = w;
+        mesh.userData.h = h;
       }
+
+      const oldMap = mesh.material.map;
+      mesh.material.map = tex;
+      mesh.material.needsUpdate = true;
+      if (oldMap && oldMap !== tex) oldMap.dispose();
     }
 
+    function clearPhotos() {
+      for (const m of photoItems.splice(0, photoItems.length)) {
+        photosGroup.remove(m);
+        if (m.geometry) m.geometry.dispose();
+        if (m.material?.map) m.material.map.dispose();
+        m.material?.dispose?.();
 
+        // dispose child materials/geometries (frame + glow)
+        for (const ch of (m.children || [])) {
+          if (ch.geometry) ch.geometry.dispose();
+          if (ch.material?.map) ch.material.map.dispose();
+          ch.material?.dispose?.();
+        }
+      }
+      focusedIndex = -1;
+    }
 
     // ---------------------------
-    // State Machine
+    // State machine
     // ---------------------------
-    const Mode = { CONE: "CONE", SCATTER: "SCATTER", FOCUS: "FOCUS" };
+    const Mode = { CONE:"CONE", SCATTER:"SCATTER", FOCUS:"FOCUS" };
     let mode = Mode.CONE;
     let targetMix = 0;
     let mix = 0;
@@ -1287,19 +1296,25 @@
     function showFocusOverlay() { focusOverlay.classList.add("show"); }
     function hideFocusOverlay() { focusOverlay.classList.remove("show"); }
 
-    function pickRandomPhotoAndGreeting() {
+    function pickRandomPhotoAndMessage() {
       if (!photoItems.length) return;
       focusedIndex = Math.floor(Math.random() * photoItems.length);
-      const ud = photoItems[focusedIndex].userData || {};
-      focusTextEl.textContent = ud.message || "Happy Holidays!";
-      focusFromEl.textContent = `From: ${ud.fromName || "Anonymous"}`;
+
+      const m = photoItems[focusedIndex];
+      const name = (m?.userData?.name || "").trim() || "Anonymous";
+      const msg  = (m?.userData?.message || "").trim() || "Happy Holidays!";
+
+      focusTitleEl.textContent = `From: ${name}`;
+      focusTextEl.textContent = msg;
     }
 
     // ---------------------------
-    // Camera control (hand + touch)
+    // Camera control (palm-driven + touch fallback)
     // ---------------------------
     let yaw = 0.0, pitch = 0.18, radius = 8.6;
     let yawT = yaw, pitchT = pitch;
+
+    let perfTime = 0;
 
     function applyCamera(dt) {
       if (mode === Mode.CONE) {
@@ -1344,8 +1359,7 @@
       if (!dragging) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      lastX = e.clientX; lastY = e.clientY;
 
       if (mode !== Mode.SCATTER) return;
       yawT += dx * 0.0042;
@@ -1356,17 +1370,17 @@
       const now = performance.now();
       if (now - lastTap < 360) {
         if (mode === Mode.SCATTER) {
-          pickRandomPhotoAndGreeting();
+          pickRandomPhotoAndMessage();
           setMode(Mode.FOCUS);
         } else if (mode === Mode.FOCUS) {
-          pickRandomPhotoAndGreeting();
+          pickRandomPhotoAndMessage();
         }
       }
       lastTap = now;
     });
 
     // ---------------------------
-    // MediaPipe Hands (gesture detection)
+    // MediaPipe Hands
     // ---------------------------
     let hands = null;
     let handEnabled = false;
@@ -1410,7 +1424,6 @@
         const dp = dist2(landmarks[pip], wrist);
         return dt > dp * 1.12;
       }
-
       const thumbExt  = extended(4, 2);
       const indexExt  = extended(8, 6);
       const middleExt = extended(12, 10);
@@ -1439,12 +1452,11 @@
         pinchDown = true;
 
         if (mode === Mode.SCATTER) {
-          pickRandomPhotoAndGreeting();
+          pickRandomPhotoAndMessage();
           setMode(Mode.FOCUS);
         } else if (mode === Mode.FOCUS) {
-          pickRandomPhotoAndGreeting();
+          pickRandomPhotoAndMessage();
         }
-
         pinchCooldown = 0.45;
       }
       if (!g.pinch) pinchDown = false;
@@ -1452,21 +1464,13 @@
       if (mode === Mode.SCATTER && !g.pinch && !g.closeHand) {
         const x = g.palm.x;
         const y = g.palm.y;
-
         if (lastPalmX != null) {
           const dx = x - lastPalmX;
           const dy = y - lastPalmY;
-
-          const dead = 0.0025;
-          const ddx = Math.abs(dx) < dead ? 0 : dx;
-          const ddy = Math.abs(dy) < dead ? 0 : dy;
-
-          yawT   += (-ddx) * 4.2;
-          pitchT += ( ddy) * 3.0;
+          yawT   += (-dx) * 4.2;
+          pitchT += ( dy) * 3.0;
         }
-
-        lastPalmX = x;
-        lastPalmY = y;
+        lastPalmX = x; lastPalmY = y;
       } else {
         lastPalmX = lastPalmY = null;
       }
@@ -1474,11 +1478,11 @@
 
     async function startHands() {
       if (!window.Hands) {
-        statusText.textContent = "MediaPipe Hands not loaded (check your network)";
+        statusText.textContent = "MediaPipe Hands not loaded (check network).";
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        statusText.textContent = "This browser does not support camera permissions";
+        statusText.textContent = "Camera API not supported in this browser.";
         return;
       }
 
@@ -1501,11 +1505,7 @@
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: {
-          facingMode: "user",
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
       });
 
       videoEl.srcObject = stream;
@@ -1513,7 +1513,7 @@
 
       handEnabled = true;
       led.classList.add("on");
-      statusText.textContent = "Hand tracking on: open/close/rotate/pinch to pick";
+      statusText.textContent = "Hand tracking enabled: Open/Close/Rotate/Pinch.";
 
       let busy = false;
       let lastSent = 0;
@@ -1535,11 +1535,11 @@
     btnStart.addEventListener("click", async () => {
       try {
         btnStart.disabled = true;
-        btnStart.textContent = "Enabling...";
+        btnStart.textContent = "Enabling…";
         await startHands();
-        btnStart.textContent = "Hand Tracking Enabled";
+        btnStart.textContent = "Hand Tracking On";
       } catch (e) {
-        statusText.textContent = "Failed to enable: allow camera access and make sure you are on HTTPS";
+        statusText.textContent = "Failed to enable. Allow camera permission and use HTTPS.";
         btnStart.disabled = false;
         btnStart.textContent = "Enable Hand Tracking";
       }
@@ -1552,7 +1552,7 @@
       greenCubes.resampleScatter();
       candySticks.resampleScatter();
       for (const p of photoItems) p.userData.scatter = sampleScatter();
-      pickRandomPhotoAndGreeting();
+      pickRandomPhotoAndMessage();
     });
 
     btnHelp.addEventListener("click", () => {
@@ -1560,7 +1560,7 @@
     });
 
     // ---------------------------
-    // Photo updates (billboard + focus)
+    // Photo update per frame (billboard + focus)
     // ---------------------------
     const tmpV = new THREE.Vector3();
     const tmpV2 = new THREE.Vector3();
@@ -1595,7 +1595,7 @@
             m.material.opacity = 1.0;
           } else {
             m.scale.setScalar(1.0);
-            m.material.opacity = lerp(1.0, 0.72, focus);
+            m.material.opacity = lerp(1.0, 0.75, focus);
             tmpV.multiplyScalar(1.0 + focus * 0.10);
           }
         } else {
@@ -1614,32 +1614,130 @@
     }
 
     // ---------------------------
-    // Render Loop
+    // Participants loading: stage-1 placeholders, stage-2 async avatar replace
     // ---------------------------
-    let perfTime = 0;
-    let lastTime = performance.now();
+    async function loadParticipantsFromRepo() {
+      const PARTICIPANTS_VERSION = "v1";
+      const url = new URL("./assets/participants.json", location.href).toString() + `?${PARTICIPANTS_VERSION}`;
 
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} — ${res.url}`);
+
+        const text = (await res.text()).replace(/^\uFEFF/, "");
+        const data = JSON.parse(text);
+        const list = Array.isArray(data) ? data : (Array.isArray(data.participants) ? data.participants : []);
+        if (!list.length) throw new Error("participants.json is empty");
+
+        clearPhotos();
+
+        const max = Math.min(120, list.length);
+        const FIRST_PLACEHOLDERS = Math.min(50, max);
+
+        // Stage 1: instant placeholders (50)
+        for (let i = 0; i < FIRST_PLACEHOLDERS; i++) {
+          const it = list[i] || {};
+          const name = String(it.name || "Anonymous");
+          const message = String(it.message || "Happy Holidays!");
+          const label = (name.split(" ")[0] || "Happy") + "\nHolidays";
+          addPhotoTexture(makePlaceholderPhotoTexture(label), { name, message });
+        }
+        pickRandomPhotoAndMessage();
+
+        // Stage 2: create remaining planes (placeholders), then async swap textures
+        statusText.textContent = `Photos ready: ${FIRST_PLACEHOLDERS}/${max}. Loading avatars…`;
+
+        for (let i = FIRST_PLACEHOLDERS; i < max; i++) {
+          const it = list[i] || {};
+          const name = String(it.name || "Anonymous");
+          const message = String(it.message || "Happy Holidays!");
+          const label = (name.split(" ")[0] || "Happy") + "\nHolidays";
+          addPhotoTexture(makePlaceholderPhotoTexture(label), { name, message });
+          if (i % 10 === 0) await new Promise(r => requestAnimationFrame(r));
+        }
+
+        const meshes = photoItems;
+
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("anonymous");
+
+        const CONCURRENCY = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 4 : 6;
+        let done = 0;
+
+        const updateProgress = () => {
+          statusText.textContent = `Loading avatars… ${done}/${max}`;
+        };
+        updateProgress();
+
+        let cursor = 0;
+        const workers = new Array(CONCURRENCY).fill(0).map(async () => {
+          while (cursor < max) {
+            const idx = cursor++;
+            const it = list[idx] || {};
+            const avatar = String(it.avatar || "");
+            const mesh = meshes[idx];
+
+            if (!avatar || !mesh) {
+              done++; updateProgress();
+              continue;
+            }
+
+            await new Promise((resolve) => {
+              loader.load(
+                avatar,
+                (tex) => { applyTextureToPhoto(mesh, tex); done++; updateProgress(); resolve(); },
+                undefined,
+                () => { done++; updateProgress(); resolve(); }
+              );
+            });
+          }
+        });
+
+        await Promise.all(workers);
+        statusText.textContent = "Ready. Use gestures or touch to interact.";
+
+      } catch (err) {
+        console.error("Failed to load participants.json:", err);
+        statusText.textContent = `Failed to load assets/participants.json: ${err.message}`;
+
+        // fallback placeholders
+        clearPhotos();
+        for (let i = 0; i < 18; i++) {
+          addPhotoTexture(makePlaceholderPhotoTexture("Happy\nHolidays"), { name: "Anonymous", message: "Happy Holidays!" });
+        }
+        pickRandomPhotoAndMessage();
+      }
+    }
+
+    // ---------------------------
+    // Background mood
+    // ---------------------------
     function updateBackground(dt) {
       if (mode === Mode.CONE) {
-        bloomPass.strength = damp(bloomPass.strength, 1.20, 2.8, dt);
+        bloomPass.strength = damp(bloomPass.strength, 1.10, 2.8, dt);
         bloomPass.radius   = damp(bloomPass.radius,   0.56, 2.8, dt);
         bloomPass.threshold= damp(bloomPass.threshold,0.18, 2.8, dt);
         fog.density        = damp(fog.density,        0.090,2.2, dt);
-        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.15, 2.2, dt);
+        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.08, 2.2, dt);
       } else if (mode === Mode.SCATTER) {
-        bloomPass.strength = damp(bloomPass.strength, 1.26, 2.8, dt);
+        bloomPass.strength = damp(bloomPass.strength, 1.18, 2.8, dt);
         bloomPass.radius   = damp(bloomPass.radius,   0.62, 2.8, dt);
         bloomPass.threshold= damp(bloomPass.threshold,0.17, 2.8, dt);
         fog.density        = damp(fog.density,        0.078,2.2, dt);
-        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.18, 2.2, dt);
+        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.10, 2.2, dt);
       } else {
-        bloomPass.strength = damp(bloomPass.strength, 1.38, 2.8, dt);
+        bloomPass.strength = damp(bloomPass.strength, 1.24, 2.8, dt);
         bloomPass.radius   = damp(bloomPass.radius,   0.70, 2.8, dt);
         bloomPass.threshold= damp(bloomPass.threshold,0.15, 2.8, dt);
         fog.density        = damp(fog.density,        0.070,2.2, dt);
-        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.22, 2.2, dt);
+        renderer.toneMappingExposure = damp(renderer.toneMappingExposure, 1.12, 2.2, dt);
       }
     }
+
+    // ---------------------------
+    // Render loop
+    // ---------------------------
+    let lastTime = performance.now();
 
     function animate() {
       const now = performance.now();
@@ -1656,38 +1754,56 @@
       targetFocus = (mode === Mode.FOCUS) ? 1 : 0;
       focus = damp(focus, targetFocus, 4.2, dt);
 
+      // uniforms
       pMat.uniforms.uTime.value = perfTime;
       pMat.uniforms.uMix.value = mix;
       pMat.uniforms.uFocus.value = focus;
+
+      orbitMat.uniforms.uTime.value = perfTime;
+      orbitMat.uniforms.uMix.value = mix;
+      orbitMat.uniforms.uFocus.value = focus;
 
       starsMat.uniforms.uTime.value = perfTime;
       starsMat.uniforms.uMix.value = mix;
       starsMat.uniforms.uFocus.value = focus;
       starsMat.uniforms.uOrbit.value.set(yaw, pitch);
 
-      orbitMat.uniforms.uTime.value = perfTime;
-      orbitMat.uniforms.uMix.value = mix;
-      orbitMat.uniforms.uFocus.value = focus;
+      FRAME_GLOW_TIME.value = perfTime;
 
+      // ornaments
       goldBalls.update({ mix, time: perfTime, focus, focusDim: 1 });
       redBalls.update({ mix, time: perfTime, focus, focusDim: 1 });
       greenCubes.update({ mix, time: perfTime, focus, focusDim: 1 });
       candySticks.update({ mix, time: perfTime, focus, focusDim: 1 });
 
+      // star shimmer
       star.material.opacity = 0.78 + Math.sin(perfTime * 2.2) * 0.10;
       star.scale.setScalar(2.15 + Math.sin(perfTime * 1.7) * 0.10);
       starCore.rotation.y += dt * 0.6;
 
+      // photos
       updatePhotos({ mix, time: perfTime, focus });
+
+      // camera
       applyCamera(dt);
+
+      // mood
       updateBackground(dt);
 
-      composer.render();
+      // selective bloom render
+      camera.layers.set(BLOOM_LAYER);
+      bloomComposer.render();
+
+      camera.layers.set(0);
+      finalComposer.render();
+
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
 
+    // ---------------------------
     // Resize
+    // ---------------------------
     function onResize() {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -1695,13 +1811,17 @@
       camera.updateProjectionMatrix();
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       renderer.setSize(w, h, false);
-      composer.setSize(w, h);
+      bloomComposer.setSize(w, h);
+      finalComposer.setSize(w, h);
+      bloomPass.setSize?.(w, h);
     }
     window.addEventListener("resize", onResize);
 
-    // Boot: load embedded participants (no upload UI)
-    pickRandomPhotoAndGreeting();          // placeholder selection
-    loadParticipantsFromRepo();            // replace placeholders if participants.json exists
+    // ---------------------------
+    // Boot
+    // ---------------------------
+    statusText.textContent = "Loading participants…";
+    loadParticipantsFromRepo();
   </script>
 </body>
 </html>
