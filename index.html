@@ -519,7 +519,8 @@
       new THREE.ShaderMaterial({
         uniforms: {
           baseTexture: { value: null },
-          bloomTexture: { value: bloomComposer.renderTarget2.texture }
+          bloomTexture: { value: bloomComposer.renderTarget2.texture },
+          uBloomIntensity: { value: 1.0 } // 控制 bloom 叠加强度
         },
         vertexShader: /* glsl */`
           varying vec2 vUv;
@@ -531,11 +532,12 @@
         fragmentShader: /* glsl */`
           uniform sampler2D baseTexture;
           uniform sampler2D bloomTexture;
+          uniform float uBloomIntensity;
           varying vec2 vUv;
           void main() {
             vec4 base = texture2D(baseTexture, vUv);
             vec4 bloom = texture2D(bloomTexture, vUv);
-            gl_FragColor = base + bloom;
+            gl_FragColor = base + bloom * uBloomIntensity; // 乘一个系数
           }
         `
       }),
@@ -1084,6 +1086,22 @@
     // ---------------------------
     const photosGroup = new THREE.Group();
     tree.add(photosGroup);
+    // Focus backplate: darken behind the enlarged photo (readability)
+    const focusBackplate = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.0,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    focusBackplate.renderOrder = 1;
+    scene.add(focusBackplate);
+    
+    const _tmpDir = new THREE.Vector3();
+
 
     const photoItems = [];
     let focusedIndex = -1;
@@ -1566,6 +1584,9 @@
     const tmpV2 = new THREE.Vector3();
 
     function updatePhotos({ mix, time, focus }) {
+      let backplateActive = false;
+      focusBackplate.material.opacity = 0.0;
+
       const focusPos = new THREE.Vector3(0, 2.2, 1.15);
       const focusScale = 15;
 
@@ -1593,6 +1614,25 @@
             const s = lerp(1.0, focusScale, focus);
             m.scale.setScalar(s);
             m.material.opacity = 1.0;
+            // --- Focus backplate (behind the focused photo) ---
+            backplateActive = true;
+            
+            // Use the same focusScale as the photo
+            const s = lerp(1.0, focusScale, focus);
+            const bw = (ud.w || 0.12) * 1.35 * s;
+            const bh = (ud.h || 0.12) * 1.35 * s;
+            
+            focusBackplate.scale.set(bw, bh, 1);
+            
+            // place slightly behind the photo (away from camera)
+            _tmpDir.subVectors(m.position, camera.position).normalize();
+            focusBackplate.position.copy(m.position).addScaledVector(_tmpDir, 0.03);
+            
+            focusBackplate.lookAt(camera.position);
+            
+            // opacity ramps with focus
+            focusBackplate.material.opacity = 0.48 * focus;
+
           } else {
             m.scale.setScalar(1.0);
             m.material.opacity = lerp(1.0, 0.75, focus);
@@ -1611,6 +1651,7 @@
         const tilt = (1.0 - (isFocused ? focus : 0.0));
         m.rotateZ(Math.sin(t * 0.6) * 0.06 * tilt);
       }
+      if (!backplateActive) focusBackplate.material.opacity = 0.0;
     }
 
     // ---------------------------
@@ -1753,6 +1794,7 @@
       mix = damp(mix, targetMix, 2.8, dt);
       targetFocus = (mode === Mode.FOCUS) ? 1 : 0;
       focus = damp(focus, targetFocus, 4.2, dt);
+      bloomMixPass.material.uniforms.uBloomIntensity.value = lerp(1.0, 0.28, focus);
 
       // uniforms
       pMat.uniforms.uTime.value = perfTime;
