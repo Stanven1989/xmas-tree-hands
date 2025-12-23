@@ -650,6 +650,8 @@
     });
     
     // main star
+    const treeHeight = 4.6;
+    const baseRadius = 1.95;
     const star = new THREE.Sprite(starMat);
     const STAR_Y = treeHeight + 0.22;  // ✅ 贴近树尖（相对 tree group）
     star.position.set(0, STAR_Y, 0);
@@ -689,8 +691,7 @@
     // ---------------------------
     const PARTICLE_COUNT = 14000;
 
-    const treeHeight = 4.6;
-    const baseRadius = 1.95;
+    
 
     const pGeo = new THREE.BufferGeometry();
     const conePos = new Float32Array(PARTICLE_COUNT * 3);
