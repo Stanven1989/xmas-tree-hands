@@ -1495,7 +1495,9 @@
       };
     }
 
-    let lastIndexX = null, lastIndexY = null;
+    //let lastIndexX = null, lastIndexY = null;
+    let lastPalmX = null, lastPalmY = null;
+
 
     function handleGesture(g, dt) {
       // Priority: open/close always override
@@ -1524,22 +1526,26 @@
       if (!g.pinch) pinchDown = false;
 
       // rotate only in scatter, single index
-      if (mode === Mode.SCATTER && g.indexOnly && !g.pinch) {
-        const x = g.indexTip.x; // 0..1
-        const y = g.indexTip.y; // 0..1
-
-        if (lastIndexX != null) {
-          const dx = x - lastIndexX;
-          const dy = y - lastIndexY;
-
-          // inverted feel for camera orbit
-          yawT += (-dx) * 3.2;
-          pitchT += (dy) * 2.2;
+      // rotate in scatter by PALM movement (more stable on mobile)
+      if (mode === Mode.SCATTER && !g.pinch && !g.closeHand) {
+        // 建议：仅在手不是“明显收拢”时旋转；openHand / 半开都可
+        // 用 palm（掌心中心）比 index tip 抖动更小
+        const x = g.palm.x; // 0..1
+        const y = g.palm.y; // 0..1
+      
+        if (lastPalmX != null) {
+          const dx = x - lastPalmX;
+          const dy = y - lastPalmY;
+      
+          // 系数可微调：数值越大越灵敏
+          yawT   += (-dx) * 4.2;
+          pitchT += ( dy) * 3.0;
         }
-        lastIndexX = x;
-        lastIndexY = y;
+      
+        lastPalmX = x;
+        lastPalmY = y;
       } else {
-        lastIndexX = lastIndexY = null;
+        lastPalmX = lastPalmY = null;
       }
     }
 
