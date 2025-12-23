@@ -402,6 +402,56 @@
       tex.magFilter = THREE.LinearFilter;
       return tex;
     }
+    function makeStarSpriteTexture() {
+      const c = document.createElement("canvas");
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext("2d");
+    
+      // soft glow background
+      const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 120);
+      g.addColorStop(0, "rgba(212,175,55,0.55)");
+      g.addColorStop(1, "rgba(212,175,55,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 256);
+    
+      // draw a 5-point star
+      ctx.save();
+      ctx.translate(128, 128);
+      ctx.rotate(-Math.PI / 2);
+    
+      const spikes = 5;
+      const outerR = 56;
+      const innerR = 24;
+      let rot = 0;
+      const step = Math.PI / spikes;
+    
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(rot) * outerR, Math.sin(rot) * outerR);
+      for (let i = 0; i < spikes; i++) {
+        ctx.lineTo(Math.cos(rot + step) * innerR, Math.sin(rot + step) * innerR);
+        rot += step;
+        ctx.lineTo(Math.cos(rot + step) * outerR, Math.sin(rot + step) * outerR);
+        rot += step;
+      }
+      ctx.closePath();
+    
+      // fill + stroke for crisp star
+      ctx.fillStyle = "rgba(255,245,220,0.95)";
+      ctx.fill();
+    
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "rgba(212,175,55,0.85)";
+      ctx.stroke();
+    
+      ctx.restore();
+    
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
 
     function makeStripeTexture() {
       const c = document.createElement("canvas");
@@ -568,6 +618,8 @@
     // Tree container
     const tree = new THREE.Group();
     scene.add(tree);
+    tree.position.y = -0.75; // 整体下移，避免顶部 HUD 遮挡
+
 
     // Ground
     const groundGeo = new THREE.CircleGeometry(14, 64);
@@ -583,35 +635,54 @@
     ground.position.y = -0.02;
     tree.add(ground);
 
-    // Top star glow (bloom layer)
-    const starGlowTex = makeRadialSpriteTexture({ inner: "rgba(212,175,55,1)", outer: "rgba(212,175,55,0)" });
-    const starSpriteMat = new THREE.SpriteMaterial({
-      map: starGlowTex,
-      color: 0xffffff,
+    // ---------------------------
+    // Star Top (glowing star, NOT a glowing sun ball)
+    // ---------------------------
+    const starTex = makeStarSpriteTexture();
+    
+    const starMat = new THREE.SpriteMaterial({
+      map: starTex,
       transparent: true,
-      opacity: 0.9,
-      depthWrite: false
+      depthWrite: false,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false
     });
-    const star = new THREE.Sprite(starSpriteMat);
-    star.position.set(0, 4.45, 0);
-    star.scale.set(2.25, 2.25, 1);
+    
+    // main star
+    const star = new THREE.Sprite(starMat);
+    const STAR_Y = treeHeight + 0.22;  // ✅ 贴近树尖（相对 tree group）
+    star.position.set(0, STAR_Y, 0);
+    star.scale.set(0.95, 0.95, 1);
     tree.add(star);
-
+    
+    // secondary cross-star for premium sparkle
+    const star2 = new THREE.Sprite(starMat.clone());
+    star2.material.opacity = 0.65;
+    star2.position.copy(star.position);
+    star2.scale.set(0.62, 0.62, 1);
+    star2.rotation = Math.PI / 4;
+    tree.add(star2);
+    
+    // bloom only
+    star.layers.enable(BLOOM_LAYER);
+    star2.layers.enable(BLOOM_LAYER);
+    
+    // optional small 3D core (very subtle, avoid "ball" look)
     const starCore = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.14, 1),
+      new THREE.OctahedronGeometry(0.06, 0),
       new THREE.MeshStandardMaterial({
         color: COLORS.gold,
-        emissive: COLORS.gold,
-        emissiveIntensity: 2.1,
+        emissive: COLORS.gold.clone().multiplyScalar(0.35),
+        emissiveIntensity: 0.6,
         metalness: 1.0,
-        roughness: 0.22
+        roughness: 0.25
       })
     );
     starCore.position.copy(star.position);
     tree.add(starCore);
-
-    star.layers.enable(BLOOM_LAYER);
     starCore.layers.enable(BLOOM_LAYER);
+
 
     // ---------------------------
     // Particle field (tree cone <-> scatter)
@@ -1817,10 +1888,17 @@
       greenCubes.update({ mix, time: perfTime, focus, focusDim: 1 });
       candySticks.update({ mix, time: perfTime, focus, focusDim: 1 });
 
-      // star shimmer
-      star.material.opacity = 0.78 + Math.sin(perfTime * 2.2) * 0.10;
-      star.scale.setScalar(2.15 + Math.sin(perfTime * 1.7) * 0.10);
-      starCore.rotation.y += dt * 0.6;
+      // star shimmer (subtle, not a big sun blob)
+      star.material.opacity = 0.86 + Math.sin(perfTime * 2.1) * 0.06;
+      star.scale.setScalar(0.92 + Math.sin(perfTime * 1.6) * 0.05);
+      
+      star2.material.opacity = 0.58 + Math.sin(perfTime * 2.4 + 1.2) * 0.06;
+      star2.scale.setScalar(0.60 + Math.sin(perfTime * 1.9 + 0.7) * 0.05);
+      star2.rotation += dt * 0.35;
+      
+      starCore.rotation.y += dt * 0.8;
+      starCore.rotation.x += dt * 0.4;
+
 
       // photos
       updatePhotos({ mix, time: perfTime, focus });
