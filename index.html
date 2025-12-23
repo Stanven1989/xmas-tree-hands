@@ -356,6 +356,14 @@
 
     <video id="cam" playsinline></video>
   </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.182.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.182.0/examples/jsm/"
+    }
+  }
+  </script>
 
   <script type="module">
     /*
@@ -364,11 +372,11 @@
       - iOS 建议使用 Safari；Chrome iOS 摄像头能力受限（WebKit 限制）。
     */
 
-    import * as THREE from "https://unpkg.com/three@0.182.0/build/three.module.js";
-    import { EffectComposer } from "https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/EffectComposer.js";
-    import { RenderPass } from "https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/RenderPass.js";
-    import { UnrealBloomPass } from "https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/UnrealBloomPass.js";
-    import { OutputPass } from "https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/OutputPass.js";
+    import * as THREE from "three";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+    import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
     const COLORS = {
       matteGreen: new THREE.Color("#0b3d2e"),
