@@ -1175,27 +1175,35 @@
     for (const p of fallbackParticipants) addPhotoTexture(makePlaceholderPhotoTexture(p.avatarLabel), p);
 
     async function loadParticipantsFromRepo() {
-      const url = `assets/participants.json?v=${Date.now()}`; // cache-bust for GitHub Pages updates
+      // Key fix: use ./ to be safe on GitHub Repo Pages base path
+      const url = new URL("./assets/participants.json", location.href).toString() + `?v=${Date.now()}`;
+    
       try {
         const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} — ${res.url}`);
+    
+        const text = await res.text();
+    
+        // Remove UTF-8 BOM if present
+        const clean = text.replace(/^\uFEFF/, "");
+    
+        const data = JSON.parse(clean);
         const list = Array.isArray(data) ? data : (Array.isArray(data.participants) ? data.participants : []);
         if (!list.length) throw new Error("participants.json is empty");
-
+    
         statusText.textContent = "Loading participant photos…";
-
+    
         clearPhotos();
-
+    
         const loader = new THREE.TextureLoader();
         const max = Math.min(120, list.length);
-
+    
         for (let i = 0; i < max; i++) {
           const it = list[i] || {};
           const name = String(it.name || "Anonymous");
           const message = String(it.message || "Happy Holidays!");
           const avatar = String(it.avatar || "");
-
+    
           await new Promise((resolve) => {
             if (!avatar) {
               addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
@@ -1206,17 +1214,23 @@
               avatar,
               (tex) => { addPhotoTexture(tex, { name, message }); resolve(); },
               undefined,
-              () => { addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message }); resolve(); }
+              () => {
+                addPhotoTexture(makePlaceholderPhotoTexture(name.split(" ")[0] || "Happy\nHolidays"), { name, message });
+                resolve();
+              }
             );
           });
         }
-
+    
         pickRandomPhotoAndGreeting();
         statusText.textContent = "Default: Cone mode (enable hand tracking)";
-      } catch (e) {
-        statusText.textContent = "Could not load assets/participants.json (using placeholders)";
+    
+      } catch (err) {
+        console.error("Failed to load participants.json:", err);
+        statusText.textContent = `Failed to load assets/participants.json: ${err.message}`;
       }
     }
+
 
     // ---------------------------
     // State Machine
