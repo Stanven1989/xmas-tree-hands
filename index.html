@@ -1343,44 +1343,51 @@
       tex.dispose?.();
     }
 
-    function applyTextureToPhoto(mesh, tex) {
+    function applyTextureToPhoto(mesh, tex, url) {
       if (!mesh || !tex) return;
-
+    
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = Math.min(MAX_ANISO, renderer.capabilities.getMaxAnisotropy());
       tex.generateMipmaps = false;
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
-
+    
       const aspect = tex.image ? (tex.image.width / tex.image.height) : 0.8;
       const h = mesh.userData.h || 0.12;
       const w = h * clamp(aspect, 0.55, 1.55);
-
+    
       if (Math.abs((mesh.userData.w || w) - w) > 1e-4) {
         mesh.geometry.dispose();
         mesh.geometry = new THREE.PlaneGeometry(w, h, 1, 1);
-
+    
         if (mesh.userData.frameMesh) {
           mesh.userData.frameMesh.geometry.dispose();
           mesh.userData.frameMesh.geometry = new THREE.PlaneGeometry(w * 1.06, h * 1.06, 1, 1);
         }
-
+    
         const glowMesh = mesh.children[mesh.children.length - 1];
         if (glowMesh && glowMesh.geometry) {
           glowMesh.geometry.dispose();
           glowMesh.geometry = new THREE.PlaneGeometry(w * 1.06, h * 1.06, 1, 1);
         }
-
+    
         mesh.userData.w = w;
         mesh.userData.h = h;
       }
-
+    
       const oldMap = mesh.material.map;
+      const oldUrl = mesh.userData.texUrl || "";
+    
       mesh.material.map = tex;
       mesh.material.needsUpdate = true;
-
-      if (oldMap && oldMap !== tex && oldMap !== PLACEHOLDER_TEX) disposeTextureSafely(oldMap);
+      mesh.userData.texUrl = url || mesh.userData.texUrl || "";
+    
+      // Release old cached texture (avoid disposing PLACEHOLDER_TEX etc.)
+      if (oldMap && oldMap !== tex && oldUrl && oldUrl !== (url || "")) {
+        releaseTex(oldUrl);
+      }
     }
+
 
     function clearPhotos() {
       for (const m of photoItems.splice(0, photoItems.length)) {
@@ -1441,8 +1448,31 @@
 
       focusTitleEl.textContent = `From: ${name}`;
       focusTextEl.textContent = msg;
+      ensureFullForIndex(focusedIndex);
     }
 
+    async function ensureFullForIndex(i) {
+      const m = photoItems[i];
+      if (!m) return;
+    
+      const fullUrl = m.userData.fullUrl || toFullUrlFromAny(m.userData.thumbUrl, m.userData.fullUrl);
+      if (!fullUrl) return;
+    
+      // already full?
+      if (m.userData.isFull) return;
+    
+      try {
+        const texFull = await loadTextureViaBitmapCached(fullUrl);
+        m.userData.isFull = true;
+        applyTextureToPhoto(m, texFull, fullUrl);
+    
+        // 可选：释放 thumb（如果当前贴图是 thumb，会在 applyTextureToPhoto 里 releaseTex）
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    
     // ---------------------------
     // Camera control (palm-driven + touch fallback)
     // ---------------------------
@@ -1774,6 +1804,90 @@
     // ---------------------------
     const bitmapLoader = new THREE.ImageBitmapLoader();
     bitmapLoader.setOptions({ imageOrientation: "flipY" });
+    // --- Thumb/Full URL helpers ---
+function toThumbUrl(fullUrl) {
+  if (!fullUrl) return "";
+  // already thumb?
+  if (fullUrl.includes("/thumb/")) return fullUrl;
+
+  // Insert "thumb" folder before filename: assets/avatars/xx.webp -> assets/avatars/thumb/xx.webp
+  const q = fullUrl.split("?");
+  const path = q[0];
+  const parts = path.split("/");
+  const filename = parts.pop();
+  return [...parts, "thumb", filename].join("/") + (q[1] ? `?${q[1]}` : "");
+}
+function toFullUrlFromAny(urlMaybeThumb, fallbackFull) {
+  if (!urlMaybeThumb) return fallbackFull || "";
+  // If current url is thumb, remove /thumb/
+  if (urlMaybeThumb.includes("/thumb/")) return urlMaybeThumb.replace("/thumb/", "/");
+  return fallbackFull || urlMaybeThumb;
+}
+
+// --- Texture cache w/ refcount (avoid duplicate decode/download) ---
+const texCache = new Map(); // url -> { tex, refs, promise }
+function retainTex(url, tex) {
+  if (!url || !tex) return;
+  const entry = texCache.get(url);
+  if (entry && entry.tex === tex) entry.refs++;
+}
+function releaseTex(url) {
+  if (!url) return;
+  const entry = texCache.get(url);
+  if (!entry) return;
+  entry.refs--;
+  if (entry.refs <= 0 && entry.tex) {
+    disposeTextureSafely(entry.tex);
+    texCache.delete(url);
+  }
+}
+
+// You already have bitmapLoader:
+bitmapLoader.setOptions({ imageOrientation: "flipY" });
+
+function loadTextureViaBitmapCached(url) {
+      if (!url) return Promise.reject(new Error("empty url"));
+    
+      const cached = texCache.get(url);
+      if (cached?.tex) {
+        cached.refs++;
+        return Promise.resolve(cached.tex);
+      }
+      if (cached?.promise) {
+        // Someone is already loading it; we'll share the promise and then retain in caller.
+        return cached.promise.then((tex) => {
+          retainTex(url, tex);
+          return tex;
+        });
+      }
+    
+      const p = new Promise((resolve, reject) => {
+        bitmapLoader.load(
+          url,
+          (bitmap) => {
+            const tex = new THREE.Texture(bitmap);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.flipY = false;
+            tex.generateMipmaps = false;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.anisotropy = Math.min(MAX_ANISO, renderer.capabilities.getMaxAnisotropy());
+            tex.needsUpdate = true;
+    
+            texCache.set(url, { tex, refs: 1, promise: null });
+            resolve(tex);
+          },
+          undefined,
+          (e) => {
+            texCache.delete(url);
+            reject(e);
+          }
+        );
+      });
+    
+      texCache.set(url, { tex: null, refs: 0, promise: p });
+      return p;
+    }
 
 
     function loadTextureViaBitmap(url) {
@@ -1862,7 +1976,31 @@
             }
 
             try {
-              const tex = await loadTextureViaBitmap(avatar);
+              const fullUrl = String(it.avatar || "");
+              const thumbUrl = toThumbUrl(fullUrl);
+              
+              // 保存到 mesh，后续 focus 用
+              mesh.userData.fullUrl = fullUrl;
+              mesh.userData.thumbUrl = thumbUrl;
+              mesh.userData.isFull = false;
+              
+              try {
+                // First try thumb
+                const texThumb = await loadTextureViaBitmapCached(thumbUrl);
+                applyTextureToPhoto(mesh, texThumb, thumbUrl);
+              } catch (e) {
+                // If thumb missing, fallback to full (still counts as "thumb stage" fallback)
+                try {
+                  const texFull = await loadTextureViaBitmapCached(fullUrl);
+                  mesh.userData.isFull = true;
+                  applyTextureToPhoto(mesh, texFull, fullUrl);
+                } catch (e2) {
+                  // ignore
+                }
+              } finally {
+                done++; updateProgress();
+              }
+
               applyTextureToPhoto(mesh, tex);
             } catch (e) {
               // ignore per-item failures
