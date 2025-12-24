@@ -8,6 +8,15 @@
 
   <!-- ES Module Shims (Import Maps for broader browser support) -->
   <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/build/three.module.js">
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/EffectComposer.js">
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/RenderPass.js">
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/UnrealBloomPass.js">
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/OutputPass.js">
+  <link rel="modulepreload" href="https://unpkg.com/three@0.182.0/examples/jsm/postprocessing/ShaderPass.js">
 
   <script type="importmap-shim">
   {
@@ -506,44 +515,54 @@
       return tex;
     }
 
-    function makePlaceholderPhotoTexture(label = "Happy\nHolidays") {
+    function makePlaceholderPhotoTexture(label = "Happy\nHolidays", w = 256, h = 320) {
       const c = document.createElement("canvas");
-      c.width = 512; c.height = 640;
+      c.width = w; c.height = h;
       const ctx = c.getContext("2d");
-
-      const g = ctx.createLinearGradient(0, 0, 0, c.height);
+    
+      const g = ctx.createLinearGradient(0, 0, 0, h);
       g.addColorStop(0, "#0b3d2e");
       g.addColorStop(1, "#050708");
       ctx.fillStyle = g;
-      ctx.fillRect(0, 0, c.width, c.height);
-
-      for (let i = 0; i < 70; i++) {
-        const x = Math.random() * c.width;
-        const y = Math.random() * c.height;
-        const r = 10 + Math.random() * 46;
+      ctx.fillRect(0, 0, w, h);
+    
+      // 少画一点，减 CPU
+      const dots = IS_MOBILE ? 24 : 40;
+      for (let i = 0; i < dots; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = 6 + Math.random() * 24;
         ctx.beginPath();
-        ctx.fillStyle = `rgba(212,175,55,${0.04 + Math.random() * 0.09})`;
+        ctx.fillStyle = `rgba(212,175,55,${0.04 + Math.random() * 0.08})`;
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
-
+    
       ctx.strokeStyle = "rgba(212,175,55,.55)";
-      ctx.lineWidth = 10;
-      ctx.strokeRect(18, 18, c.width - 36, c.height - 36);
-
-      ctx.fillStyle = "rgba(255,255,255,.92)";
-      ctx.font = "700 44px ui-sans-serif, system-ui, -apple-system";
+      ctx.lineWidth = Math.max(6, Math.round(w * 0.02));
+      ctx.strokeRect(
+        Math.round(w * 0.04),
+        Math.round(h * 0.04),
+        Math.round(w * 0.92),
+        Math.round(h * 0.92)
+      );
+    
+      // 文字也简化（可选）
+      ctx.fillStyle = "rgba(255,255,255,.90)";
+      ctx.font = `700 ${Math.round(w * 0.09)}px ui-sans-serif, system-ui, -apple-system`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const lines = String(label).split("\n");
-      lines.forEach((ln, idx) => ctx.fillText(ln, c.width / 2, c.height * 0.55 + idx * 52));
-
+      lines.forEach((ln, idx) => ctx.fillText(ln, w / 2, h * 0.58 + idx * (w * 0.11)));
+    
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearMipMapLinearFilter;
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
       return tex;
     }
+
 
     // ---------------------------
     // Three.js Setup
@@ -1185,6 +1204,12 @@
     const _tmpDir = new THREE.Vector3();
 
     const photoItems = [];
+    const PLACEHOLDER_TEX = makePlaceholderPhotoTexture(
+      "Happy\nHolidays",
+      IS_MOBILE ? 256 : 384,
+      IS_MOBILE ? 320 : 480
+    );
+
     let focusedIndex = -1;
 
     function makePhotoMaterial(tex) {
@@ -1354,14 +1379,14 @@
       mesh.material.map = tex;
       mesh.material.needsUpdate = true;
 
-      if (oldMap && oldMap !== tex) disposeTextureSafely(oldMap);
+      if (oldMap && oldMap !== tex && oldMap !== PLACEHOLDER_TEX) disposeTextureSafely(oldMap);
     }
 
     function clearPhotos() {
       for (const m of photoItems.splice(0, photoItems.length)) {
         photosGroup.remove(m);
         if (m.geometry) m.geometry.dispose();
-        if (m.material?.map) disposeTextureSafely(m.material.map);
+        if (m.material?.map && m.material.map !== PLACEHOLDER_TEX) disposeTextureSafely(m.material.map);
         m.material?.dispose?.();
 
         for (const ch of (m.children || [])) {
@@ -1796,8 +1821,7 @@
           const it = list[i] || {};
           const name = String(it.name || "Anonymous");
           const message = String(it.message || "Happy Holidays!");
-          const label = (name.split(" ")[0] || "Happy") + "\nHolidays";
-          addPhotoTexture(makePlaceholderPhotoTexture(label), { name, message });
+          addPhotoTexture(PLACEHOLDER_TEX, { name, message });
         }
         pickRandomPhotoAndMessage();
 
