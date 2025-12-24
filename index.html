@@ -650,6 +650,10 @@ function buildTextPointCloud(text, {
   geo.setAttribute("aHome", new THREE.BufferAttribute(aHome, 3));
   geo.setAttribute("aScatter", new THREE.BufferAttribute(aScatter, 3));
   geo.setAttribute("aRand", new THREE.BufferAttribute(aRand, 1));
+  
+  // ✅ 关键：给 Points 一个 position attribute（用 aHome 即可）
+  geo.setAttribute("position", new THREE.BufferAttribute(aHome, 3));
+  geo.computeBoundingSphere();  
   return { geo, count };
 }
 
@@ -725,6 +729,7 @@ function createAFIntroPoints(isMobile) {
 
   const points = new THREE.Points(geo, mat);
   points.renderOrder = 9999; // 尽量最后画
+  points.frustumCulled = false;
   return { points, uniforms };
 }
 
@@ -2289,8 +2294,8 @@ function loadTextureViaBitmapCached(url) {
       starCore.rotation.y += dt * 0.8;
       starCore.rotation.x += dt * 0.4;
 
-      // photos
-      updatePhotos({ mix, time: perfTime, focus });
+      // camera
+      applyCamera(dt);
 
     // ---------------------------
     // Update AF intro placement + dissolve (one-shot)
@@ -2336,9 +2341,9 @@ function loadTextureViaBitmapCached(url) {
       }
     })();
 
-
-      // camera
-      applyCamera(dt);
+      // photos
+      updatePhotos({ mix, time: perfTime, focus });
+      
 
       // mood
       updateBackground(dt);
