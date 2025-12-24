@@ -563,6 +563,170 @@
       return tex;
     }
 
+    // ---------------------------
+// Intro: "Analytic Factory" particle text (one-shot)
+// ---------------------------
+const AF_INTRO = {
+  group: null,
+  points: null,
+  uniforms: null,
+  triggered: false,
+  done: false,
+  startT: 0,
+  duration: 1.15,     // 散开消失时间（秒）
+  distance: 2.7       // 离相机距离（越大越靠后）
+};
+
+function buildTextPointCloud(text, {
+  fontSize = 150,
+  step = 4,              // 越小点越多（更“无数粒子”），但更耗
+  worldWidth = 5.6       // 字在屏幕横向占比（世界单位）
+} = {}) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+
+  const font = `900 ${fontSize}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`;
+  ctx.font = font;
+  const metrics = ctx.measureText(text);
+
+  const pad = Math.ceil(fontSize * 0.35);
+  c.width = Math.ceil(metrics.width + pad * 2);
+  c.height = Math.ceil(fontSize * 1.2 + pad * 2);
+
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.font = font;
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, c.width / 2, c.height / 2);
+
+  const img = ctx.getImageData(0, 0, c.width, c.height).data;
+
+  // 采样点
+  const pts = [];
+  for (let y = 0; y < c.height; y += step) {
+    for (let x = 0; x < c.width; x += step) {
+      const a = img[(y * c.width + x) * 4 + 3];
+      if (a > 30) pts.push([x, y, a / 255]);
+    }
+  }
+
+  const scale = worldWidth / c.width;
+  const count = pts.length;
+
+  const aHome = new Float32Array(count * 3);
+  const aScatter = new Float32Array(count * 3);
+  const aRand = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const [x, y] = pts[i];
+
+    const px = (x - c.width / 2) * scale;
+    const py = (c.height / 2 - y) * scale; // 翻转 y
+
+    aHome[i * 3 + 0] = px;
+    aHome[i * 3 + 1] = py;
+    aHome[i * 3 + 2] = 0;
+
+    // 散开目标：向外随机扩散（带一点前后深度）
+    const r1 = Math.random();
+    const r2 = Math.random();
+    const theta = r1 * Math.PI * 2;
+    const phi = Math.acos(2 * r2 - 1);
+    const rr = 2.2 + Math.random() * 3.2;
+
+    const sx = Math.sin(phi) * Math.cos(theta) * rr;
+    const sy = Math.cos(phi) * rr * 0.75;
+    const sz = Math.sin(phi) * Math.sin(theta) * rr;
+
+    aScatter[i * 3 + 0] = px + sx;
+    aScatter[i * 3 + 1] = py + sy;
+    aScatter[i * 3 + 2] = sz;
+
+    aRand[i] = Math.random();
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("aHome", new THREE.BufferAttribute(aHome, 3));
+  geo.setAttribute("aScatter", new THREE.BufferAttribute(aScatter, 3));
+  geo.setAttribute("aRand", new THREE.BufferAttribute(aRand, 1));
+  return { geo, count };
+}
+
+function createAFIntroPoints(isMobile) {
+  const { geo } = buildTextPointCloud("Analytic Factory", {
+    fontSize: 160,
+    step: isMobile ? 5 : 4,
+    worldWidth: isMobile ? 5.0 : 6.0
+  });
+
+  const uniforms = {
+    uTime: { value: 0 },
+    uDissolve: { value: 0 },
+    uOpacity: { value: 1.0 },
+    uBaseSize: { value: isMobile ? 3.2 : 3.6 }
+  };
+
+  const mat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    depthTest: false, // 作为开场字：永远在最前（不被树挡）
+    blending: THREE.AdditiveBlending,
+    uniforms,
+    vertexShader: /* glsl */`
+      uniform float uTime;
+      uniform float uDissolve;
+      uniform float uBaseSize;
+      attribute vec3 aHome;
+      attribute vec3 aScatter;
+      attribute float aRand;
+      varying float vFade;
+
+      void main(){
+        float d = smoothstep(0.0, 1.0, uDissolve);
+        vec3 pos = mix(aHome, aScatter, d);
+
+        // 横向漂浮 + 轻微抖动（在 dissolve 前更明显）
+        float alive = 1.0 - d;
+        pos.x += sin(uTime * 1.2 + aRand * 10.0) * 0.06 * alive;
+        pos.y += cos(uTime * 0.9 + aRand *  8.0) * 0.05 * alive;
+
+        vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+        gl_Position = projectionMatrix * mv;
+
+        float dist = -mv.z;
+        float tw = 0.75 + 0.25 * sin(uTime * 2.0 + aRand * 6.0);
+        gl_PointSize = clamp(uBaseSize * tw * (280.0 / dist), 1.0, 8.0);
+
+        // dissolve 越接近 1 越淡
+        vFade = pow(1.0 - d, 1.7);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      precision highp float;
+      uniform float uOpacity;
+      varying float vFade;
+      void main(){
+        vec2 uv = gl_PointCoord - 0.5;
+        float d = length(uv);
+
+        float core = smoothstep(0.50, 0.0, d);
+        float halo = smoothstep(0.60, 0.15, d) * 0.55;
+
+        float a = (core + halo) * uOpacity * vFade;
+        if(a < 0.01) discard;
+
+        // 暖白金（避免过曝）
+        vec3 col = vec3(1.00, 0.94, 0.78);
+        gl_FragColor = vec4(col, a);
+      }
+    `
+  });
+
+  const points = new THREE.Points(geo, mat);
+  points.renderOrder = 9999; // 尽量最后画
+  return { points, uniforms };
+}
 
     // ---------------------------
     // Three.js Setup
@@ -587,6 +751,21 @@
 
     const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 120);
     camera.position.set(0, 2.4, 8.6);
+    // ---------------------------
+    // Create one-shot intro text (only once on first load)
+    // ---------------------------
+    {
+      const intro = createAFIntroPoints(IS_MOBILE);
+      AF_INTRO.uniforms = intro.uniforms;
+    
+      AF_INTRO.group = new THREE.Group();
+      AF_INTRO.points = intro.points;
+      AF_INTRO.group.add(AF_INTRO.points);
+    
+      // 放进场景
+      scene.add(AF_INTRO.group);
+    }
+
 
     // ---------------------------
     // Selective Bloom
@@ -1428,6 +1607,11 @@
         targetMix = 1;
         targetFocus = 0;
         hideFocusOverlay();
+        // 第一次扩散时：让 "Analytic Factory" 散开消失，且永不再出现
+        if (!AF_INTRO.done && !AF_INTRO.triggered) {
+          AF_INTRO.triggered = true;
+          AF_INTRO.startT = performance.now() * 0.001;
+        }
       } else if (mode === Mode.FOCUS) {
         targetMix = 1;
         targetFocus = 1;
@@ -2107,6 +2291,51 @@ function loadTextureViaBitmapCached(url) {
 
       // photos
       updatePhotos({ mix, time: perfTime, focus });
+
+    // ---------------------------
+    // Update AF intro placement + dissolve (one-shot)
+    // ---------------------------
+    (function updateAFIntro(){
+      if (!AF_INTRO.group || !AF_INTRO.points || AF_INTRO.done) return;
+    
+      const tNow = performance.now() * 0.001;
+    
+      // 固定在相机前方（屏幕正前方）
+      const fwd = new THREE.Vector3();
+      camera.getWorldDirection(fwd);
+    
+      AF_INTRO.group.position.copy(camera.position).addScaledVector(fwd, AF_INTRO.distance);
+      AF_INTRO.group.quaternion.copy(camera.quaternion);
+    
+      // 额外的“横向漂浮”
+      const driftX = Math.sin(tNow * 0.55) * 0.22;
+      const driftY = Math.sin(tNow * 0.33) * 0.06;
+      AF_INTRO.group.position.add(new THREE.Vector3(driftX, driftY, 0).applyQuaternion(camera.quaternion));
+    
+      // uniforms
+      AF_INTRO.uniforms.uTime.value = perfTime;
+    
+      // 若触发散开：推进 dissolve
+      if (AF_INTRO.triggered) {
+        const u = clamp((tNow - AF_INTRO.startT) / AF_INTRO.duration, 0, 1);
+        AF_INTRO.uniforms.uDissolve.value = u;
+    
+        // 完成后彻底隐藏 + 标记 done（永不再出现）
+        if (u >= 1) {
+          AF_INTRO.done = true;
+          AF_INTRO.points.visible = false;
+    
+          // 释放 GPU 资源（可选但推荐）
+          AF_INTRO.points.geometry.dispose();
+          AF_INTRO.points.material.dispose();
+          scene.remove(AF_INTRO.group);
+        }
+      } else {
+        // 没触发前保持可见
+        AF_INTRO.uniforms.uDissolve.value = 0;
+      }
+    })();
+
 
       // camera
       applyCamera(dt);
