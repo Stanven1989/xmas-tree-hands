@@ -2330,7 +2330,7 @@ function loadTextureViaBitmapCached(url) {
       const fwd = new THREE.Vector3();
       camera.getWorldDirection(fwd);
     
-      AF_INTRO.group.position.copy(camera.position).addScaledVector(fwd, -AF_INTRO.distance);
+      AF_INTRO.group.position.copy(camera.position).addScaledVector(fwd, AF_INTRO.distance);
       AF_INTRO.group.quaternion.copy(camera.quaternion);
     
       // 额外的“横向漂浮”
