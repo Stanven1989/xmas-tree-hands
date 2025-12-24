@@ -574,7 +574,7 @@ const AF_INTRO = {
   done: false,
   startT: 0,
   duration: 1.15,     // 散开消失时间（秒）
-  distance: 2.7       // 离相机距离（越大越靠后）
+  distance: 6.5       // 离相机距离（越大越靠后）
 };
 
 function buildTextPointCloud(text, {
@@ -660,15 +660,16 @@ function buildTextPointCloud(text, {
 function createAFIntroPoints(isMobile) {
   const { geo } = buildTextPointCloud("Analytic Factory", {
     fontSize: 160,
-    step: isMobile ? 5 : 4,
-    worldWidth: isMobile ? 5.0 : 6.0
+    step: IS_MOBILE ? 4 : 3,      // 原来 mobile 5 / desktop 4
+    worldWidth: IS_MOBILE ? 5.2 : 6.2
   });
+
 
   const uniforms = {
     uTime: { value: 0 },
     uDissolve: { value: 0 },
     uOpacity: { value: 1.0 },
-    uBaseSize: { value: isMobile ? 3.2 : 3.6 }
+    uBaseSize: { value: isMobile ? 1.25 : 1.45 }
   };
 
   const mat = new THREE.ShaderMaterial({
@@ -699,8 +700,11 @@ function createAFIntroPoints(isMobile) {
         gl_Position = projectionMatrix * mv;
 
         float dist = -mv.z;
-        float tw = 0.75 + 0.25 * sin(uTime * 2.0 + aRand * 6.0);
-        gl_PointSize = clamp(uBaseSize * tw * (280.0 / dist), 1.0, 8.0);
+        float tw = 0.85 + 0.15 * sin(uTime * 2.0 + aRand * 6.0);
+        
+        // 关键：把 280 改成更小的系数，并且把 clamp 上限降下来
+        gl_PointSize = clamp(uBaseSize * tw * (90.0 / dist), 0.8, 2.6);
+
 
         // dissolve 越接近 1 越淡
         vFade = pow(1.0 - d, 1.7);
